@@ -1,0 +1,2 @@
+-- Migration 16: Fix audit_log timestamp default
+DEFINE FIELD OVERWRITE timestamp ON TABLE audit_log TYPE option<datetime> DEFAULT time::now();

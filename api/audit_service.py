@@ -129,16 +129,11 @@ class AuditLog:
 
 
 class AuditService:
-    """Service for audit logging operations"""
-    
+    """Service for audit logging operations. Persists to SurrealDB via AuditLogEntry."""
+
     def __init__(self):
-        # Initialize audit log repository
-        # In development: uses in-memory storage
-        # In production: connect to SurrealDB audit_log table
-        # self.repo = AuditLogRepository(db_connection)
-        self.in_memory_logs: List[AuditLog] = []  # Temporary in-memory storage
-        logger.info("✅ AuditService initialized (in-memory mode for development)")
-    
+        logger.info("AuditService initialized (SurrealDB-backed)")
+
     async def log_action(
         self,
         user_id: str,
@@ -155,8 +150,8 @@ class AuditService:
         duration_ms: Optional[float] = None,
         **kwargs
     ) -> AuditLog:
-        """Log an action to the audit trail"""
-        
+        """Log an action to the audit trail, persisting to SurrealDB."""
+
         audit_log = AuditLog(
             user_id=user_id,
             action=action,
@@ -172,21 +167,37 @@ class AuditService:
             duration_ms=duration_ms,
             metadata=kwargs,
         )
-        
-        # Persist audit log
-        # In development: store in-memory
-        # In production: store in SurrealDB audit_log table
-        self.in_memory_logs.append(audit_log)
-        
-        # Call database method when available:
-        # await self.repo.create(audit_log.dict())
-        
+
+        # Persist to SurrealDB
+        try:
+            from open_notebook.domain.audit_log import AuditLogEntry
+
+            await AuditLogEntry.create_entry(
+                user_id=user_id,
+                action=action.value,
+                resource_type=resource_type.value,
+                resource_id=resource_id,
+                resource_name=resource_name,
+                old_value=old_value,
+                new_value=new_value,
+                status=status,
+                error_message=error_message,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                http_status=kwargs.get("http_status"),
+                duration_ms=duration_ms,
+                metadata=kwargs,
+            )
+        except Exception as e:
+            # Don't let audit persistence failures break the app
+            logger.warning(f"Failed to persist audit log to DB: {e}")
+
         logger.info(
             f"Audit: {action.value} by {user_id} on {resource_type.value}:{resource_id} - {status}"
         )
-        
+
         return audit_log
-    
+
     async def query_logs(
         self,
         resource_type: Optional[str] = None,
@@ -197,96 +208,55 @@ class AuditService:
         end_date: Optional[datetime] = None,
         limit: int = 100,
     ) -> List[Dict[str, Any]]:
-        """Query audit logs with filtering"""
-        
-        # Database query implementation
-        # In development: filter in-memory logs
-        # In production: query SurrealDB with:
-        # SELECT * FROM audit_log WHERE user_id = $user_id LIMIT $limit
-        
-        results = self.in_memory_logs
-        
-        if user_id:
-            results = [log for log in results if log.user_id == user_id]
-        
-        if resource_type:
-            results = [log for log in results if log.resource_type == resource_type]
-        
-        if resource_id:
-            results = [log for log in results if log.resource_id == resource_id]
-        
-        if action:
-            results = [log for log in results if log.action == action]
-        
-        if start_date:
-            results = [log for log in results if log.timestamp >= start_date]
-        
-        if end_date:
-            results = [log for log in results if log.timestamp <= end_date]
-        
-        # Return most recent first
-        results = sorted(results, key=lambda x: x.timestamp, reverse=True)
-        results = results[:limit]
-        
-        return [log.to_dict() for log in results]
-    
+        """Query audit logs from SurrealDB with filtering."""
+        try:
+            from open_notebook.domain.audit_log import AuditLogEntry
+
+            return await AuditLogEntry.query(
+                user_id=user_id,
+                action=action,
+                resource_type=resource_type,
+                resource_id=resource_id,
+                start_date=start_date,
+                end_date=end_date,
+                limit=limit,
+            )
+        except Exception as e:
+            logger.error(f"Failed to query audit logs from DB: {e}")
+            return []
+
     async def search_logs(self, query: str, limit: int = 50) -> List[Dict[str, Any]]:
-        """
-        Search audit logs by resource name or action.
-        
-        Full-text search implementation:
-        - In development: simple string matching on in-memory logs
-        - In production: use SurrealDB full-text search or Elasticsearch
-        """
-        results = [
-            log for log in self.in_memory_logs
-            if (query.lower() in str(log.resource_name).lower() or
-                query.lower() in log.action or
-                query.lower() in str(log.metadata).lower())
-        ]
-        
-        results = sorted(results, key=lambda x: x.timestamp, reverse=True)
-        results = results[:limit]
-        
-        logger.info(f"✅ Searched logs for '{query}': found {len(results)} results")
-        
-        return [log.to_dict() for log in results]
-    
+        """Search audit logs by action or resource name."""
+        try:
+            from open_notebook.domain.audit_log import AuditLogEntry
+
+            results = await AuditLogEntry.query(action=query, limit=limit)
+            if not results:
+                results = await AuditLogEntry.query(resource_type=query, limit=limit)
+            return results
+        except Exception as e:
+            logger.error(f"Failed to search audit logs: {e}")
+            return []
+
     async def get_user_activity(self, user_id: str, days: int = 30) -> Dict[str, Any]:
-        """
-        Get user's activity summary.
-        
-        Aggregation implementation:
-        - In development: aggregate in-memory logs
-        - In production: use SurrealDB aggregation pipeline or Elasticsearch
-        """
-        cutoff_date = datetime.utcnow() - __import__('datetime').timedelta(days=days)
-        
-        user_logs = [
-            log for log in self.in_memory_logs
-            if log.user_id == user_id and log.timestamp >= cutoff_date
-        ]
-        
-        # Count actions by type
-        action_counts = {}
-        for log in user_logs:
-            action_counts[log.action] = action_counts.get(log.action, 0) + 1
-        
-        # Calculate success/failure rates
-        successes = len([log for log in user_logs if log.status == "success"])
-        failures = len([log for log in user_logs if log.status == "failure"])
-        
-        return {
-            "user_id": user_id,
-            "period_days": days,
-            "total_actions": len(user_logs),
-            "success_count": successes,
-            "failure_count": failures,
-            "success_rate": successes / len(user_logs) if user_logs else 0,
-            "actions_by_type": action_counts,
-            "first_action": user_logs[-1].timestamp if user_logs else None,
-            "last_action": user_logs[0].timestamp if user_logs else None,
-        }
+        """Get user's activity summary from SurrealDB."""
+        try:
+            from open_notebook.domain.audit_log import AuditLogEntry
+
+            return await AuditLogEntry.get_user_activity(user_id, days=days)
+        except Exception as e:
+            logger.error(f"Failed to get user activity from DB: {e}")
+            return {
+                "user_id": user_id,
+                "period_days": days,
+                "total_actions": 0,
+                "success_count": 0,
+                "failure_count": 0,
+                "success_rate": 0,
+                "actions_by_type": {},
+                "first_action": None,
+                "last_action": None,
+            }
 
 
 # Global audit service instance
@@ -548,7 +518,39 @@ async def search_audit_logs(
     Search audit logs by resource name and action.
     Requires: Admin role
     """
-    
+    user = getattr(request.state, 'user', None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    if 'admin' not in user.get('roles', []):
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    logs = await audit_service.search_logs(q, limit)
+    return {
+        "query": q,
+        "total": len(logs),
+        "logs": logs,
+    }
+
+
+@audit_router.get("/stats")
+async def get_audit_stats(
+    request: Request,
+    days: int = Query(30, ge=1, le=365),
+):
+    """
+    Get audit statistics for the specified period.
+    Requires: Admin role
+    """
+    user = getattr(request.state, 'user', None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    if 'admin' not in user.get('roles', []):
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    activity = await audit_service.get_user_activity("__all__", days)
+    return activity
     # Permission check: Admin only
     user = getattr(request.state, 'user', None)
     if not user:

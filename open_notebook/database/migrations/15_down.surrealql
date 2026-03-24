@@ -1,0 +1,4 @@
+-- Migration 15 Down: Remove OAuth RBAC and Audit Log tables
+REMOVE TABLE IF EXISTS audit_log;
+REMOVE TABLE IF EXISTS role;
+REMOVE TABLE IF EXISTS user;

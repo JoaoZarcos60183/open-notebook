@@ -29,8 +29,8 @@ class UserRepository:
                 "roles": user_data.get("roles", ["viewer"]),
                 "provider": user_data.get("provider", "local"),
                 "external_id": user_data.get("external_id"),
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
+                "created": datetime.utcnow().isoformat(),
+                "updated": datetime.utcnow().isoformat(),
                 "is_active": True
             }
             
@@ -114,9 +114,9 @@ class UserRepository:
             
             update_data = {
                 k: v for k, v in user_data.items()
-                if k not in ["id", "created_at"]
+                if k not in ["id", "created"]
             }
-            update_data["updated_at"] = datetime.utcnow().isoformat()
+            update_data["updated"] = datetime.utcnow().isoformat()
             
             query = f"UPDATE $id SET * = $data"
             result = await db.query(query, {

@@ -1,0 +1,2 @@
+-- Migration 16 Down: Revert audit_log timestamp to no default
+DEFINE FIELD OVERWRITE timestamp ON TABLE audit_log TYPE option<datetime>;

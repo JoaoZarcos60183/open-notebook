@@ -1,50 +1,43 @@
 """
 Audit logging router for monitoring system activities and user actions.
+Backed by SurrealDB 'audit_log' table.
 """
 
-from fastapi import APIRouter, Request, HTTPException
+from datetime import datetime
+from typing import Optional
+
+from fastapi import APIRouter, Query, Request, HTTPException
 from loguru import logger
+
+from open_notebook.domain.audit_log import AuditLogEntry
 
 router = APIRouter(prefix="/audit", tags=["audit"])
 
 
 @router.get("/logs")
-async def get_audit_logs(request: Request):
+async def get_audit_logs(
+    request: Request,
+    user_id: Optional[str] = Query(None),
+    action: Optional[str] = Query(None),
+    resource_type: Optional[str] = Query(None),
+    limit: int = Query(100, ge=1, le=1000),
+):
     """
-    Get all audit logs.
+    Get audit logs with optional filtering.
     Requires admin role.
     """
     try:
-        # Check if user is admin
         user = getattr(request.state, "user", None)
         if not user:
             raise HTTPException(status_code=401, detail="Not authenticated")
-        
-        # Return mock audit logs
-        # TODO: Implement actual audit log retrieval from database
-        return [
-            {
-                "id": "audit-001",
-                "timestamp": "2024-03-23T10:30:00Z",
-                "user_id": "admin-user-001",
-                "user_email": "admin@open-notebook.local",
-                "action": "LOGIN",
-                "resource_type": "auth",
-                "status": "success",
-                "details": {"ip": "127.0.0.1", "method": "local"},
-            },
-            {
-                "id": "audit-002",
-                "timestamp": "2024-03-23T10:25:00Z",
-                "user_id": "admin-user-001",
-                "user_email": "admin@open-notebook.local",
-                "action": "USER_CREATED",
-                "resource_type": "user",
-                "resource_id": "user-123",
-                "status": "success",
-                "details": {"email": "newuser@example.com", "role": "editor"},
-            },
-        ]
+
+        results = await AuditLogEntry.query(
+            user_id=user_id,
+            action=action,
+            resource_type=resource_type,
+            limit=limit,
+        )
+        return results
     except HTTPException:
         raise
     except Exception as e:
@@ -53,46 +46,23 @@ async def get_audit_logs(request: Request):
 
 
 @router.get("/user/{user_id}/activity")
-async def get_user_activity(user_id: str, request: Request):
+async def get_user_activity(user_id: str, request: Request, days: int = Query(30, ge=1, le=365)):
     """
-    Get activity logs for a specific user.
+    Get activity summary for a specific user.
     Users can only view their own activity unless they're admin.
     """
     try:
         current_user = getattr(request.state, "user", None)
         if not current_user:
             raise HTTPException(status_code=401, detail="Not authenticated")
-        
+
         # Regular users can only see their own activity
-        if current_user.get("id") != user_id and not current_user.get("is_admin"):
+        current_roles = current_user.get("roles", [])
+        if current_user.get("id") != user_id and "admin" not in current_roles:
             raise HTTPException(status_code=403, detail="Permission denied")
-        
-        # Return mock user activity logs
-        # TODO: Implement actual user activity retrieval from database
-        return [
-            {
-                "id": "audit-user-001",
-                "timestamp": "2024-03-23T10:30:00Z",
-                "user_id": user_id,
-                "user_email": current_user.get("email"),
-                "action": "NOTEBOOK_CREATED",
-                "resource_type": "notebook",
-                "resource_id": "notebook-456",
-                "status": "success",
-                "details": {"name": "My Research Notes"},
-            },
-            {
-                "id": "audit-user-002",
-                "timestamp": "2024-03-23T10:20:00Z",
-                "user_id": user_id,
-                "user_email": current_user.get("email"),
-                "action": "SOURCE_ADDED",
-                "resource_type": "source",
-                "resource_id": "source-789",
-                "status": "success",
-                "details": {"file_name": "document.pdf"},
-            },
-        ]
+
+        activity = await AuditLogEntry.get_user_activity(user_id, days=days)
+        return activity
     except HTTPException:
         raise
     except Exception as e:

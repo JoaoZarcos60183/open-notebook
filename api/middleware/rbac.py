@@ -323,24 +323,41 @@ async def list_roles():
 async def create_custom_role(name: str, permissions: List[str]):
     """
     Create a custom role with specific permissions.
-    TODO: Implement database storage
+    Stores the role in SurrealDB.
     """
-    return {
-        "status": "pending",
-        "message": "Custom role creation not yet implemented"
-    }
+    from open_notebook.domain.role import Role as RoleModel
+
+    existing = await RoleModel.get_by_name(name)
+    if existing:
+        raise HTTPException(status_code=409, detail=f"Role '{name}' already exists")
+
+    new_role = RoleModel(
+        name=name,
+        permissions=permissions,
+        is_default=False,
+    )
+    await new_role.save()
+    logger.info(f"Custom role created: {name}")
+    return new_role.to_dict()
 
 
 @rbac_router.put("/custom/{role_id}")
 async def update_custom_role(role_id: str, permissions: List[str]):
     """
     Update a custom role's permissions.
-    TODO: Implement database update
     """
-    return {
-        "status": "pending",
-        "message": "Custom role update not yet implemented"
-    }
+    from open_notebook.domain.role import Role as RoleModel
+
+    record_id = role_id if ":" in role_id else f"role:{role_id}"
+    try:
+        db_role = await RoleModel.get(record_id)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Role not found")
+
+    db_role.permissions = permissions
+    await db_role.save()
+    logger.info(f"Custom role updated: {role_id}")
+    return db_role.to_dict()
 
 
 @rbac_router.get("/user/{user_id}")
@@ -370,31 +387,34 @@ async def get_user_permissions(user_id: str, request: Request):
         if 'admin' not in admin_roles:
             raise HTTPException(status_code=403, detail="Admin access required")
         
-        # In production, load user from database
-        # For now, return a template response
-        
-        # Assume user has viewer role if not specified
-        user_roles = ["viewer"]  # Would be loaded from database in production
+        # Load user from database
+        from open_notebook.domain.user import User as UserModel
+
+        record_id = user_id if ":" in user_id else f"user:{user_id}"
+        try:
+            db_user = await UserModel.get(record_id)
+        except Exception:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user_roles = db_user.roles or ["viewer"]
         user_permissions = []
-        
+
         for role_name in user_roles:
             try:
                 role = Role[role_name.upper()]
                 user_permissions.extend([p.value for p in ROLE_PERMISSIONS.get(role, [])])
             except KeyError:
                 pass
-        
-        # Remove duplicates
+
         user_permissions = list(set(user_permissions))
-        
-        logger.info(f"✅ Retrieved permissions for user {user_id}: {len(user_permissions)} permissions")
-        
+
+        logger.info(f"Retrieved permissions for user {user_id}: {len(user_permissions)} permissions")
+
         return {
             "user_id": user_id,
             "roles": user_roles,
             "permissions": user_permissions,
             "is_admin": "admin" in user_roles,
-            "message": "Use UserRepository to load actual user from database"
         }
     except HTTPException:
         raise

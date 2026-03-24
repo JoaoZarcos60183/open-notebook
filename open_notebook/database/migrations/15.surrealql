@@ -1,0 +1,73 @@
+-- Migration 15: OAuth RBAC and Audit Log tables
+-- Creates user, role, and audit_log tables for authentication,
+-- role-based access control, and compliance auditing.
+
+-- =============================================
+-- USER TABLE
+-- =============================================
+DEFINE TABLE IF NOT EXISTS user SCHEMAFULL;
+
+DEFINE FIELD IF NOT EXISTS email ON TABLE user TYPE string;
+DEFINE FIELD IF NOT EXISTS name ON TABLE user TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS roles ON TABLE user TYPE array<string> DEFAULT ["viewer"];
+DEFINE FIELD IF NOT EXISTS provider ON TABLE user TYPE string DEFAULT "local";
+DEFINE FIELD IF NOT EXISTS external_id ON TABLE user TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS is_active ON TABLE user TYPE bool DEFAULT true;
+DEFINE FIELD IF NOT EXISTS last_login ON TABLE user TYPE option<datetime>;
+
+DEFINE FIELD IF NOT EXISTS created ON user DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON user DEFAULT time::now() VALUE time::now();
+
+DEFINE INDEX IF NOT EXISTS user_email_idx ON TABLE user COLUMNS email UNIQUE;
+DEFINE INDEX IF NOT EXISTS user_provider_idx ON TABLE user COLUMNS provider, external_id;
+
+-- =============================================
+-- ROLE TABLE
+-- =============================================
+DEFINE TABLE IF NOT EXISTS role SCHEMAFULL;
+
+DEFINE FIELD IF NOT EXISTS name ON TABLE role TYPE string;
+DEFINE FIELD IF NOT EXISTS description ON TABLE role TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS permissions ON TABLE role TYPE array<string> DEFAULT [];
+DEFINE FIELD IF NOT EXISTS is_default ON TABLE role TYPE bool DEFAULT false;
+
+DEFINE FIELD IF NOT EXISTS created ON role DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON role DEFAULT time::now() VALUE time::now();
+
+DEFINE INDEX IF NOT EXISTS role_name_idx ON TABLE role COLUMNS name UNIQUE;
+
+-- =============================================
+-- AUDIT LOG TABLE
+-- =============================================
+DEFINE TABLE IF NOT EXISTS audit_log SCHEMAFULL;
+
+DEFINE FIELD IF NOT EXISTS timestamp ON TABLE audit_log TYPE option<datetime> DEFAULT time::now();
+DEFINE FIELD IF NOT EXISTS user_id ON TABLE audit_log TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS action ON TABLE audit_log TYPE string DEFAULT "";
+DEFINE FIELD IF NOT EXISTS resource_type ON TABLE audit_log TYPE string DEFAULT "";
+DEFINE FIELD IF NOT EXISTS resource_id ON TABLE audit_log TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS resource_name ON TABLE audit_log TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS old_value ON TABLE audit_log TYPE option<object> FLEXIBLE;
+DEFINE FIELD IF NOT EXISTS new_value ON TABLE audit_log TYPE option<object> FLEXIBLE;
+DEFINE FIELD IF NOT EXISTS status ON TABLE audit_log TYPE string DEFAULT "success";
+DEFINE FIELD IF NOT EXISTS error_message ON TABLE audit_log TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS ip_address ON TABLE audit_log TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS user_agent ON TABLE audit_log TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS http_status ON TABLE audit_log TYPE option<int>;
+DEFINE FIELD IF NOT EXISTS duration_ms ON TABLE audit_log TYPE option<float>;
+DEFINE FIELD IF NOT EXISTS metadata ON TABLE audit_log TYPE option<object> FLEXIBLE;
+
+DEFINE FIELD IF NOT EXISTS created ON audit_log DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON audit_log DEFAULT time::now() VALUE time::now();
+
+DEFINE INDEX IF NOT EXISTS audit_timestamp_idx ON TABLE audit_log COLUMNS timestamp;
+DEFINE INDEX IF NOT EXISTS audit_user_idx ON TABLE audit_log COLUMNS user_id;
+DEFINE INDEX IF NOT EXISTS audit_action_idx ON TABLE audit_log COLUMNS action;
+DEFINE INDEX IF NOT EXISTS audit_resource_idx ON TABLE audit_log COLUMNS resource_type, resource_id;
+
+-- =============================================
+-- SEED DEFAULT ROLES
+-- =============================================
+CREATE role SET name = "admin", description = "Full system access", permissions = ["admin:full", "notebooks:read", "notebooks:write", "notebooks:delete", "sources:read", "sources:write", "sources:delete", "notes:read", "notes:write", "notes:delete", "chat:access", "podcasts:manage", "settings:manage", "users:manage", "audit:read"], is_default = true;
+CREATE role SET name = "editor", description = "Can create and edit content", permissions = ["notebooks:read", "notebooks:write", "sources:read", "sources:write", "notes:read", "notes:write", "chat:access", "podcasts:manage"], is_default = true;
+CREATE role SET name = "viewer", description = "Read-only access", permissions = ["notebooks:read", "sources:read", "notes:read", "chat:access"], is_default = true;

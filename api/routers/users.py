@@ -1,10 +1,12 @@
 """
 User management router for admin operations.
-Currently returns mock data - integrate with database as needed.
+Backed by SurrealDB 'user' table.
 """
 
 from fastapi import APIRouter, Request, HTTPException
 from loguru import logger
+
+from open_notebook.domain.user import User
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -16,25 +18,14 @@ async def list_users(request: Request):
     Requires admin role.
     """
     try:
-        # Check if user is admin
         user = getattr(request.state, "user", None)
         if not user:
             raise HTTPException(status_code=401, detail="Not authenticated")
-        
-        # For now, return mock data
-        # TODO: Implement actual user listing from database
+
+        users = await User.get_active_users()
         return {
-            "users": [
-                {
-                    "id": "admin-user-001",
-                    "email": "admin@open-notebook.local",
-                    "name": "Administrator",
-                    "roles": ["admin"],
-                    "provider": "local",
-                    "created_at": "2024-01-01T00:00:00Z",
-                }
-            ],
-            "total": 1,
+            "users": [u.to_safe_dict() for u in users],
+            "total": len(users),
         }
     except HTTPException:
         raise
@@ -50,23 +41,18 @@ async def get_user(user_id: str, request: Request):
     Requires admin role.
     """
     try:
-        # Check if user is admin
         user = getattr(request.state, "user", None)
         if not user:
             raise HTTPException(status_code=401, detail="Not authenticated")
-        
-        # TODO: Implement actual user retrieval from database
-        if user_id == "admin-user-001":
-            return {
-                "id": "admin-user-001",
-                "email": "admin@open-notebook.local",
-                "name": "Administrator",
-                "roles": ["admin"],
-                "provider": "local",
-                "created_at": "2024-01-01T00:00:00Z",
-            }
-        else:
+
+        # Ensure the ID has the table prefix
+        record_id = user_id if ":" in user_id else f"user:{user_id}"
+        try:
+            db_user = await User.get(record_id)
+        except Exception:
             raise HTTPException(status_code=404, detail="User not found")
+
+        return db_user.to_safe_dict()
     except HTTPException:
         raise
     except Exception as e:
@@ -81,24 +67,32 @@ async def create_user(request: Request):
     Requires admin role.
     """
     try:
-        # Check if user is admin
         user = getattr(request.state, "user", None)
         if not user:
             raise HTTPException(status_code=401, detail="Not authenticated")
-        
+
         body = await request.json()
-        
-        # TODO: Implement actual user creation in database
-        logger.info(f"User creation requested: {body.get('email')}")
-        
-        return {
-            "id": "new-user-id",
-            "email": body.get("email"),
-            "name": body.get("name"),
-            "roles": body.get("roles", ["viewer"]),
-            "provider": "local",
-            "created_at": "2024-03-23T00:00:00Z",
-        }
+
+        email = body.get("email")
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+
+        # Check for existing user with same email
+        existing = await User.get_by_email(email)
+        if existing:
+            raise HTTPException(status_code=409, detail="User with this email already exists")
+
+        new_user = User(
+            email=email,
+            name=body.get("name"),
+            roles=body.get("roles", ["viewer"]),
+            provider=body.get("provider", "local"),
+            is_active=True,
+        )
+        await new_user.save()
+
+        logger.info(f"User created: {email}")
+        return new_user.to_safe_dict()
     except HTTPException:
         raise
     except Exception as e:
@@ -113,22 +107,24 @@ async def update_user_roles(user_id: str, request: Request):
     Requires admin role.
     """
     try:
-        # Check if user is admin
         user = getattr(request.state, "user", None)
         if not user:
             raise HTTPException(status_code=401, detail="Not authenticated")
-        
+
         body = await request.json()
         roles = body.get("roles", ["viewer"])
-        
-        # TODO: Implement actual role update in database
-        logger.info(f"User {user_id} roles update requested: {roles}")
-        
-        return {
-            "id": user_id,
-            "roles": roles,
-            "updated_at": "2024-03-23T00:00:00Z",
-        }
+
+        record_id = user_id if ":" in user_id else f"user:{user_id}"
+        try:
+            db_user = await User.get(record_id)
+        except Exception:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        db_user.roles = roles
+        await db_user.save()
+
+        logger.info(f"User {user_id} roles updated to {roles}")
+        return db_user.to_safe_dict()
     except HTTPException:
         raise
     except Exception as e:
@@ -143,22 +139,33 @@ async def delete_user(user_id: str, request: Request):
     Requires admin role.
     """
     try:
-        # Check if user is admin
         user = getattr(request.state, "user", None)
         if not user:
             raise HTTPException(status_code=401, detail="Not authenticated")
-        
-        # Don't allow deleting the only admin user
-        if user_id == "admin-user-001":
-            raise HTTPException(status_code=403, detail="Cannot delete the admin user")
-        
-        # TODO: Implement actual user deletion in database
-        logger.info(f"User deletion requested: {user_id}")
-        
+
+        record_id = user_id if ":" in user_id else f"user:{user_id}"
+        try:
+            db_user = await User.get(record_id)
+        except Exception:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Don't allow deleting users with admin role (protect last admin)
+        if "admin" in db_user.roles:
+            # Count remaining admins
+            all_users = await User.get_active_users()
+            admin_count = sum(1 for u in all_users if "admin" in u.roles)
+            if admin_count <= 1:
+                raise HTTPException(
+                    status_code=403, detail="Cannot delete the last admin user"
+                )
+
+        await db_user.delete()
+        logger.info(f"User deleted: {user_id}")
         return {"id": user_id, "deleted": True}
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error deleting user: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete user")
+
 

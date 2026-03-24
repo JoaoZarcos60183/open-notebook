@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
@@ -6,7 +7,6 @@ import { QueryProvider } from "@/components/providers/QueryProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { ConnectionGuard } from "@/components/common/ConnectionGuard";
-import { themeScript } from "@/lib/theme-script";
 import { I18nProvider } from "@/components/providers/I18nProvider";
 import { RBACProvider } from "@/lib/contexts/rbac-context";
 
@@ -24,10 +24,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
-      <body className={inter.className}>
+      <head />
+      <body className={inter.className} suppressHydrationWarning>
+        <Script src="/scripts/theme-init.js" strategy="beforeInteractive" />
         <ErrorBoundary>
           <ThemeProvider>
             <QueryProvider>
