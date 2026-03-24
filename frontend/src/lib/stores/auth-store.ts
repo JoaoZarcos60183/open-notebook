@@ -325,29 +325,35 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         const state = get();
-        if (state.token && state.token !== "not-required") {
-          try {
-            const apiUrl = await getApiUrl();
-            await fetch(`${apiUrl}/api/auth/logout`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${state.token}`,
-                "Content-Type": "application/json",
-              },
-            }).catch(() => {}); // Ignore errors on logout
-          } catch {
-            // Silently fail, logout locally anyway
-          }
-        }
+        const oldToken = state.token;
 
+        // Clear local state FIRST (synchronous) before async server call
         set({
           isAuthenticated: false,
           token: null,
           user: null,
           error: null,
+          lastAuthCheck: null,
+          authRequired: null,
           oauthState: undefined,
           oauthProvider: undefined,
         });
+
+        // Then notify server (fire-and-forget, don't block on this)
+        if (oldToken && oldToken !== "not-required") {
+          try {
+            const apiUrl = await getApiUrl();
+            await fetch(`${apiUrl}/api/auth/logout`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${oldToken}`,
+                "Content-Type": "application/json",
+              },
+            }).catch(() => {}); // Ignore errors on logout
+          } catch {
+            // Silently fail, local state already cleared
+          }
+        }
       },
 
       fetchUserInfo: async () => {

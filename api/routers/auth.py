@@ -38,15 +38,23 @@ async def get_auth_status():
     Check if authentication is enabled.
     Returns auth mode and available login methods.
     """
-    auth_enabled = bool(get_secret_from_env("OPEN_NOTEBOOK_PASSWORD"))
-    oauth_enabled = os.getenv("OAUTH_ENABLED", "false").lower() == "true"
+    has_password = bool(get_secret_from_env("OPEN_NOTEBOOK_PASSWORD"))
+    has_admin = bool(os.getenv("ADMIN_PASSWORD"))
+    has_azure = bool(os.getenv("AZURE_CLIENT_ID"))
+    has_google = bool(os.getenv("GOOGLE_CLIENT_ID"))
+    has_github = bool(os.getenv("GITHUB_CLIENT_ID"))
+    oauth_enabled = has_azure or has_google or has_github
+
+    # Auth is enabled if ANY authentication method is configured
+    auth_enabled = has_password or has_admin or oauth_enabled
 
     return {
         "auth_enabled": auth_enabled,
         "oauth_enabled": oauth_enabled,
-        "has_azure": bool(os.getenv("AZURE_CLIENT_ID")),
-        "has_google": bool(os.getenv("GOOGLE_CLIENT_ID")),
-        "local_login_available": True,  # Always available in dev
+        "has_azure": has_azure,
+        "has_google": has_google,
+        "has_github": has_github,
+        "local_login_available": has_password or has_admin,
         "message": "Multiple authentication methods available"
     }
 
