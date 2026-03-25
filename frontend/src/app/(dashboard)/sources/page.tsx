@@ -6,7 +6,6 @@ import { sourcesApi } from '@/lib/api/sources'
 import { SourceListResponse } from '@/lib/types/api'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
-import { AppShell } from '@/components/layout/AppShell'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { FileText, Link as LinkIcon, Upload, AlignLeft, Trash2, ArrowUpDown } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
@@ -253,38 +252,32 @@ export default function SourcesPage() {
 
   if (loading) {
     return (
-      <AppShell>
-        <div className="flex h-full items-center justify-center">
-          <LoadingSpinner />
-        </div>
-      </AppShell>
+      <div className="flex h-full items-center justify-center">
+        <LoadingSpinner />
+      </div>
     )
   }
 
   if (error) {
     return (
-      <AppShell>
-        <div className="flex h-full items-center justify-center">
-          <p className="text-red-500">{error}</p>
-        </div>
-      </AppShell>
+      <div className="flex h-full items-center justify-center">
+        <p className="text-red-500">{error}</p>
+      </div>
     )
   }
 
   if (sources.length === 0) {
     return (
-      <AppShell>
-        <EmptyState
-          icon={FileText}
-          title={t.sources.noSourcesYet}
-          description={t.sources.allSourcesDescShort}
-        />
-      </AppShell>
+      <EmptyState
+        icon={FileText}
+        title={t.sources.noSourcesYet}
+        description={t.sources.allSourcesDescShort}
+      />
     )
   }
 
   return (
-    <AppShell>
+    <>
       <div className="flex flex-col h-full w-full max-w-none px-6 py-6">
         <div className="mb-6 flex-shrink-0">
           <h1 className="text-3xl font-bold">{t.sources.allSources}</h1>
@@ -428,6 +421,6 @@ export default function SourcesPage() {
         confirmVariant="destructive"
         onConfirm={handleDeleteConfirm}
       />
-    </AppShell>
+    </>
   )
 }

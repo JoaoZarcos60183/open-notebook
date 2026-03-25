@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { StatusDashboard } from "@/components/admin/StatusDashboard";
 import { RoleManagementComponent } from "@/components/admin/RoleManagementComponent";
 import { UserCreationDialog } from "@/components/admin/UserCreationDialog";
 import { PermissionsManagementComponent } from "@/components/admin/PermissionsManagementComponent";
 import { AuditLogViewer } from "@/components/admin/AuditLogViewer";
 import { ProtectedRouteGuard } from "@/lib/hooks/use-authorization";
-import { AppShell } from "@/components/layout/AppShell";
 import {
   Card,
   CardContent,
@@ -21,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Users, Shield, Activity, BarChart3 } from "lucide-react";
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [refreshKey, setRefreshKey] = useState(0);
   const [activeTab, setActiveTab] = useState("overview");
@@ -36,11 +36,17 @@ export default function AdminDashboardPage() {
     }
   }, [searchParams]);
 
+  // Handle tab change - update URL
+  const handleTabChange = (tabValue: string) => {
+    setActiveTab(tabValue);
+    router.push(`/admin?tab=${tabValue}`);
+  };
+
   return (
-    <AppShell>
-      <div className="flex-1 overflow-y-auto">
-        <ProtectedRouteGuard requiredRole="admin">
-          <div className="container mx-auto py-8">
+      <ProtectedRouteGuard requiredRole="admin">
+        <div className="w-full h-full flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
+            <div className="container mx-auto py-6 px-4 sm:py-8 sm:px-6 lg:px-8">
             <div className="mb-8">
               <h1 className="text-4xl font-bold">Admin Dashboard</h1>
               <p className="text-muted-foreground mt-2">
@@ -50,10 +56,10 @@ export default function AdminDashboardPage() {
 
             <Tabs
               value={activeTab}
-              onValueChange={setActiveTab}
+              onValueChange={handleTabChange}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-4 mb-8">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-6 sm:mb-8">
                 <TabsTrigger value="overview" className="gap-2">
                   <BarChart3 className="h-4 w-4" />
                   <span className="hidden sm:inline">Overview</span>
@@ -77,7 +83,7 @@ export default function AdminDashboardPage() {
                 <StatusDashboard />
 
                 {/* Quick Actions */}
-                <div className="grid md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   <Card
                     className="cursor-pointer hover:shadow-lg transition-shadow"
                     onClick={() => setActiveTab("users")}
@@ -181,9 +187,9 @@ export default function AdminDashboardPage() {
                 </div>
               </TabsContent>
             </Tabs>
+            </div>
           </div>
-        </ProtectedRouteGuard>
-      </div>
-    </AppShell>
+        </div>
+      </ProtectedRouteGuard>
   );
 }

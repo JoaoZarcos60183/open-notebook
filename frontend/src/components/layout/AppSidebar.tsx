@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -105,6 +105,7 @@ export function AppSidebar() {
   const { isAdmin } = useRBAC();
   const navigation = getNavigation(t, isAdmin);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { logout } = useAuth();
   const { isCollapsed, toggleCollapse } = useSidebarStore();
   const { openSourceDialog, openNotebookDialog, openPodcastDialog } =
@@ -282,16 +283,70 @@ export function AppSidebar() {
                 )}
 
                 {section.items.map((item) => {
-                  // Find the best match by selecting the most specific (longest) matching href
+                  // Extract base path and query parameters
+                  const getBasePath = (path: string) => path.split("?")[0];
+                  const getQueryParams = (path: string) => {
+                    const parts = path.split("?");
+                    return parts.length > 1 ? new URLSearchParams(parts[1]) : null;
+                  };
+                  
+                  const itemBasePath = getBasePath(item.href);
+                  const pathnameBase = getBasePath(pathname || "");
+                  const itemParams = getQueryParams(item.href);
+                  
+                  // For exact match with query parameters (e.g., admin tabs)
+                  if (itemParams) {
+                    const itemTab = itemParams.get("tab");
+                    const currentTab = searchParams.get("tab");
+                    const isActive = itemBasePath === pathnameBase && itemTab === currentTab;
+                    
+                    const button = (
+                      <Button
+                        variant={isActive ? "secondary" : "ghost"}
+                        className={cn(
+                          "w-full gap-3 text-sidebar-foreground sidebar-menu-item",
+                          isActive &&
+                            "bg-sidebar-accent text-sidebar-accent-foreground",
+                          isCollapsed ? "justify-center px-2" : "justify-start",
+                        )}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!isCollapsed && <span>{item.name}</span>}
+                      </Button>
+                    );
+
+                    if (isCollapsed) {
+                      return (
+                        <Tooltip key={item.name}>
+                          <TooltipTrigger asChild>
+                            <Link href={item.href} scroll={false}>{button}</Link>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            {item.name}
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    }
+
+                    return (
+                      <Link key={item.name} href={item.href} scroll={false}>
+                        {button}
+                      </Link>
+                    );
+                  }
+                  
+                  // Original logic for non-parameterized routes
                   const matches = section.items.filter(
-                    (i) =>
-                      i.href === pathname || pathname?.startsWith(i.href + "/"),
+                    (i) => {
+                      const iBasePath = getBasePath(i.href);
+                      return iBasePath === pathnameBase || pathnameBase?.startsWith(iBasePath + "/");
+                    },
                   );
                   const bestMatch =
                     matches.length > 0
                       ? matches.sort((a, b) => b.href.length - a.href.length)[0]
                       : null;
-                  const isActive = bestMatch?.href === item.href;
+                  const isActive = bestMatch ? getBasePath(bestMatch.href) === itemBasePath : false;
                   const button = (
                     <Button
                       variant={isActive ? "secondary" : "ghost"}
@@ -311,7 +366,7 @@ export function AppSidebar() {
                     return (
                       <Tooltip key={item.name}>
                         <TooltipTrigger asChild>
-                          <Link href={item.href}>{button}</Link>
+                          <Link href={item.href} scroll={false}>{button}</Link>
                         </TooltipTrigger>
                         <TooltipContent side="right">
                           {item.name}
@@ -321,7 +376,7 @@ export function AppSidebar() {
                   }
 
                   return (
-                    <Link key={item.name} href={item.href}>
+                    <Link key={item.name} href={item.href} scroll={false}>
                       {button}
                     </Link>
                   );

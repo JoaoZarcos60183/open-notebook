@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { AppShell } from '@/components/layout/AppShell'
 import { NotebookHeader } from '../components/NotebookHeader'
 import { SourcesColumn } from '../components/SourcesColumn'
 import { NotesColumn } from '../components/NotesColumn'
@@ -117,18 +116,15 @@ export default function NotebookPage() {
 
   if (!notebook) {
     return (
-      <AppShell>
-        <div className="p-6">
-          <h1 className="text-2xl font-bold mb-4">{t.notebooks.notFound}</h1>
-          <p className="text-muted-foreground">{t.notebooks.notFoundDesc}</p>
-        </div>
-      </AppShell>
+      <div className="p-6">
+        <h1 className="text-2xl font-bold mb-4">{t.notebooks.notFound}</h1>
+        <p className="text-muted-foreground">{t.notebooks.notFoundDesc}</p>
+      </div>
     )
   }
 
   return (
-    <AppShell>
-      <div className="flex flex-col flex-1 min-h-0">
+    <div className="flex flex-col flex-1 min-h-0">
         <div className="flex-shrink-0 p-6 pb-0">
           <NotebookHeader notebook={notebook} />
         </div>
@@ -243,6 +239,6 @@ export default function NotebookPage() {
           </div>
         </div>
       </div>
-    </AppShell>
+    </div>
   )
 }
