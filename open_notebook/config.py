@@ -45,3 +45,6 @@ OPENSEARCH_VERIFY_CERTS = os.environ.get(
 OPENSEARCH_INDEX = OPENSEARCH_INDEX_PREFIX
 # Derived: whether to use SSL (true when scheme is https)
 OPENSEARCH_USE_SSL = OPENSEARCH_SCHEME == "https"
+
+# Navy corpus index (pre-indexed documents from NOVA-Researcher)
+NAVY_OPENSEARCH_INDEX = os.environ.get("NAVY_OPENSEARCH_INDEX", "amalia_navy_test").strip()

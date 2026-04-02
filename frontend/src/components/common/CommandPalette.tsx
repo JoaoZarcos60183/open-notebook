@@ -28,6 +28,7 @@ import {
   Moon,
   Monitor,
   Loader2,
+  FlaskConical,
 } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { TranslationKeys } from '@/lib/locales'
@@ -37,6 +38,7 @@ const getNavigationItems = (t: TranslationKeys) => [
   { name: t.navigation.notebooks, href: '/notebooks', icon: Book, keywords: ['notes', 'research', 'projects'] },
   { name: t.navigation.askAndSearch, href: '/search', icon: Search, keywords: ['find', 'query'] },
   { name: t.navigation.podcasts, href: '/podcasts', icon: Mic, keywords: ['audio', 'episodes', 'generate'] },
+  { name: t.navigation.research ?? 'Research', href: '/research', icon: FlaskConical, keywords: ['research', 'report', 'amalia', 'nova', 'analysis'] },
   { name: t.navigation.models, href: '/settings/api-keys', icon: Bot, keywords: ['ai', 'llm', 'providers', 'openai', 'anthropic'] },
   { name: t.navigation.transformations, href: '/transformations', icon: Shuffle, keywords: ['prompts', 'templates', 'actions'] },
   { name: t.navigation.settings, href: '/settings', icon: Settings, keywords: ['preferences', 'config', 'options'] },

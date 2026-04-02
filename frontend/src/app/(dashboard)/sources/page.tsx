@@ -16,6 +16,8 @@ import { getDateLocale } from '@/lib/utils/date-locale'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { getApiErrorKey } from '@/lib/utils/error-handler'
+import { useNavyDocuments } from '@/lib/hooks/use-navy-docs'
+import { NavyDocsSection } from '@/components/notebooks/NavyDocsSection'
 
 export default function SourcesPage() {
   const { t, language } = useTranslation()
@@ -37,6 +39,10 @@ export default function SourcesPage() {
   const loadingMoreRef = useRef(false)
   const hasMoreRef = useRef(true)
   const PAGE_SIZE = 30
+
+  // Navy corpus docs (read-only catalog on this page)
+  const { data: navyData } = useNavyDocuments()
+  const hasNavyDocs = (navyData?.documents?.length ?? 0) > 0
 
   const fetchSources = useCallback(async (reset = false) => {
     try {
@@ -266,7 +272,7 @@ export default function SourcesPage() {
     )
   }
 
-  if (sources.length === 0) {
+  if (sources.length === 0 && !hasNavyDocs) {
     return (
       <EmptyState
         icon={FileText}
@@ -286,6 +292,7 @@ export default function SourcesPage() {
           </p>
         </div>
 
+        {sources.length > 0 && (
         <div ref={scrollContainerRef} className="flex-1 rounded-md border overflow-auto">
           <table
             ref={tableRef}
@@ -410,6 +417,14 @@ export default function SourcesPage() {
             </tbody>
           </table>
         </div>
+        )}
+
+        {/* Navy Corpus Knowledge Base Documents */}
+        {hasNavyDocs && (
+          <div className="mt-4 flex-shrink-0">
+            <NavyDocsSection readOnly />
+          </div>
+        )}
       </div>
 
       <ConfirmDialog

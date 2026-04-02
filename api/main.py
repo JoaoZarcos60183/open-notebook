@@ -41,11 +41,13 @@ from api.routers import (
     insights,
     languages,
     models,
+    navy_docs,
     notebooks,
     notes,
     opensearch,
     permissions,
     podcasts,
+    research,
     search,
     settings,
     source_chat,
@@ -116,6 +118,44 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Podcast profile migration encountered errors: {e}")
         # Non-fatal: profiles can be migrated manually via UI
+
+    # Ensure Amália (always-available provider) has a credential and models
+    try:
+        from open_notebook.domain.credential import Credential as CredentialModel
+        from api.credentials_service import create_credential_from_env
+        from open_notebook.ai.key_provider import provision_provider_keys
+        from open_notebook.ai.model_discovery import sync_provider_models
+
+        existing_amalia = await CredentialModel.get_by_provider("amalia")
+        if not existing_amalia:
+            logger.info("Auto-creating Amália credential (always-available provider)")
+            cred = create_credential_from_env("amalia")
+            await cred.save()
+            logger.info(f"Amália credential created (id={cred.id})")
+
+        await provision_provider_keys("amalia")
+        discovered, new, existing = await sync_provider_models("amalia", auto_register=True)
+        if new > 0:
+            logger.info(f"Registered {new} new Amália model(s)")
+
+        # Link any unlinked Amália models to the credential
+        from open_notebook.database.repository import repo_query as _rq
+        from open_notebook.ai.models import Model as ModelRecord
+        amalia_creds = await CredentialModel.get_by_provider("amalia")
+        if amalia_creds:
+            cred_id = amalia_creds[0].id
+            unlinked = await _rq(
+                "SELECT * FROM model WHERE string::lowercase(provider) = 'amalia' AND credential IS NONE",
+                {},
+            )
+            for m in unlinked:
+                model = ModelRecord(**m)
+                model.credential = cred_id
+                await model.save()
+            if unlinked:
+                logger.info(f"Linked {len(unlinked)} Amália model(s) to credential {cred_id}")
+    except Exception as e:
+        logger.warning(f"Amália auto-provisioning encountered an error: {e}")
 
     logger.success("API initialization completed successfully")
 
@@ -293,6 +333,7 @@ app.include_router(speaker_profiles.router, prefix="/api", tags=["speaker-profil
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(source_chat.router, prefix="/api", tags=["source-chat"])
 app.include_router(credentials.router, prefix="/api", tags=["credentials"])
+app.include_router(research.router, prefix="/api", tags=["research"])
 app.include_router(languages.router, prefix="/api", tags=["languages"])
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(users.router, prefix="/api", tags=["users"])
@@ -301,6 +342,7 @@ app.include_router(audit.router, prefix="/api", tags=["audit"])
 app.include_router(
     opensearch.router, prefix="/api/opensearch", tags=["opensearch"]
 )
+app.include_router(navy_docs.router, prefix="/api", tags=["navy-docs"])
 
 
 @app.get("/")

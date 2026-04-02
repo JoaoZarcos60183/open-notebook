@@ -147,6 +147,27 @@ class ModelManager:
         # Normalize provider name: DB stores underscores but Esperanto expects hyphens
         provider = model.provider.replace("_", "-")
 
+        # Amália uses an OpenAI-compatible endpoint; map to that Esperanto provider
+        # and inject base_url + api_key into config so the factory reaches the
+        # correct host even when no Credential object is linked.
+        if provider == "amalia":
+            provider = "openai-compatible"
+            if "base_url" not in config:
+                import os
+
+                config.setdefault(
+                    "base_url",
+                    os.environ.get(
+                        "AMALIA_BASE_URL",
+                        "https://amalia.novasearch.org/vlm/v1",
+                    ),
+                )
+            if "api_key" not in config:
+                config.setdefault(
+                    "api_key",
+                    os.environ.get("AMALIA_API_KEY", "dummy"),
+                )
+
         # Create model based on type (Esperanto will cache the instance)
         if model.type == "language":
             return AIFactory.create_language(

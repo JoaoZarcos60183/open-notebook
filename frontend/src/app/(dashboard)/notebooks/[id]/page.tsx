@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { NotebookHeader } from '../components/NotebookHeader'
 import { SourcesColumn } from '../components/SourcesColumn'
@@ -9,6 +9,7 @@ import { ChatColumn } from '../components/ChatColumn'
 import { useNotebook } from '@/lib/hooks/use-notebooks'
 import { useNotebookSources } from '@/lib/hooks/use-sources'
 import { useNotes } from '@/lib/hooks/use-notes'
+import { useNavyDocuments } from '@/lib/hooks/use-navy-docs'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useIsDesktop } from '@/lib/hooks/use-media-query'
@@ -95,6 +96,36 @@ export default function NotebookPage() {
     }
   }, [notes])
 
+  // Navy corpus document selection state
+  const { data: navyData } = useNavyDocuments()
+  const [selectedNavyDocIds, setSelectedNavyDocIds] = useState<Set<string>>(new Set())
+  const [navyDocsInitialized, setNavyDocsInitialized] = useState(false)
+
+  // Initialize: select all navy docs by default
+  useEffect(() => {
+    if (navyData?.documents && navyData.documents.length > 0 && !navyDocsInitialized) {
+      setSelectedNavyDocIds(new Set(navyData.documents.map(d => d.doc_id)))
+      setNavyDocsInitialized(true)
+    }
+  }, [navyData, navyDocsInitialized])
+
+  const handleNavyDocSelectionChange = useCallback((docId: string, selected: boolean) => {
+    setSelectedNavyDocIds(prev => {
+      const next = new Set(prev)
+      if (selected) next.add(docId)
+      else next.delete(docId)
+      return next
+    })
+  }, [])
+
+  const handleNavySelectAll = useCallback((selected: boolean) => {
+    if (selected && navyData?.documents) {
+      setSelectedNavyDocIds(new Set(navyData.documents.map(d => d.doc_id)))
+    } else {
+      setSelectedNavyDocIds(new Set())
+    }
+  }, [navyData])
+
   // Handler to update context selection
   const handleContextModeChange = (itemId: string, mode: ContextMode, type: 'source' | 'note') => {
     setContextSelections(prev => ({
@@ -166,6 +197,9 @@ export default function NotebookPage() {
                     hasNextPage={hasNextPage}
                     isFetchingNextPage={isFetchingNextPage}
                     fetchNextPage={fetchNextPage}
+                    selectedNavyDocIds={selectedNavyDocIds}
+                    onNavyDocSelectionChange={handleNavyDocSelectionChange}
+                    onNavyDocSelectAll={handleNavySelectAll}
                   />
                 )}
                 {mobileActiveTab === 'notes' && (
@@ -183,6 +217,7 @@ export default function NotebookPage() {
                     contextSelections={contextSelections}
                     sources={sources}
                     sourcesLoading={sourcesLoading}
+                    selectedNavyDocIds={selectedNavyDocIds}
                   />
                 )}
               </div>
@@ -210,6 +245,9 @@ export default function NotebookPage() {
                 hasNextPage={hasNextPage}
                 isFetchingNextPage={isFetchingNextPage}
                 fetchNextPage={fetchNextPage}
+                selectedNavyDocIds={selectedNavyDocIds}
+                onNavyDocSelectionChange={handleNavyDocSelectionChange}
+                onNavyDocSelectAll={handleNavySelectAll}
               />
             </div>
 
@@ -234,11 +272,11 @@ export default function NotebookPage() {
                 contextSelections={contextSelections}
                 sources={sources}
                 sourcesLoading={sourcesLoading}
+                selectedNavyDocIds={selectedNavyDocIds}
               />
             </div>
           </div>
         </div>
-      </div>
     </div>
   )
 }

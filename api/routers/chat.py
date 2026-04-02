@@ -80,6 +80,7 @@ class ExecuteChatResponse(BaseModel):
 class BuildContextRequest(BaseModel):
     notebook_id: str = Field(..., description="Notebook ID")
     context_config: Dict[str, Any] = Field(..., description="Context configuration")
+    query: Optional[str] = Field(None, description="User query for relevance-based corpus search")
 
 
 class BuildContextResponse(BaseModel):
@@ -494,6 +495,43 @@ async def build_context(request: BuildContextRequest):
                 except Exception as e:
                     logger.warning(f"Error processing note {note.id}: {str(e)}")
                     continue
+
+        # Process navy corpus documents (if any selected)
+        navy_config = request.context_config.get("navy_docs", {}) if request.context_config else {}
+        navy_doc_ids = navy_config.get("doc_ids", [])
+        if navy_doc_ids and request.query:
+            try:
+                from open_notebook.search.navy_docs import search_navy_documents
+
+                navy_results = await search_navy_documents(
+                    query=request.query,
+                    doc_ids=navy_doc_ids,
+                    k=15,
+                )
+                navy_context_items = []
+                for r in navy_results:
+                    label = r.get("doc_id", "")
+                    section = r.get("section_title", "")
+                    if section:
+                        label = f"{label} — {section}"
+                    page = r.get("page_start")
+                    if page is not None:
+                        label += f" (p.{page})"
+                    item = {
+                        "id": f"navy:{r.get('doc_id', '')}:p{page or 0}",
+                        "title": label,
+                        "content": r.get("content", ""),
+                    }
+                    navy_context_items.append(item)
+                    total_content += r.get("content", "")
+
+                if navy_context_items:
+                    context_data["navy_corpus"] = navy_context_items  # type: ignore[assignment]
+                    logger.info(
+                        f"Added {len(navy_context_items)} navy corpus chunks to context"
+                    )
+            except Exception as e:
+                logger.warning(f"Error fetching navy corpus context: {e}")
 
         # Calculate character and token counts
         char_count = len(total_content)

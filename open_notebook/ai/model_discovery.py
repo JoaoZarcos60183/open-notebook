@@ -582,6 +582,81 @@ async def discover_openai_compatible_models() -> List[DiscoveredModel]:
     return models
 
 
+async def discover_amalia_models() -> List[DiscoveredModel]:
+    """
+    Discover models from the Amália API (NOVASearch).
+
+    Amália is a Portuguese-optimized LLM hosted at amalia.novasearch.org.
+    It uses an OpenAI-compatible API, so we query the /models endpoint.
+    Falls back to a static known model list if the API is unreachable.
+    """
+    api_key = None
+    base_url = None
+
+    # Try to get config from Credential database first
+    try:
+        credentials = await Credential.get_by_provider("amalia")
+        if credentials:
+            cred = credentials[0]
+            config = cred.to_esperanto_config()
+            api_key = config.get("api_key", "dummy")
+            base_url = config.get("base_url", "").rstrip("/")
+    except Exception as e:
+        logger.warning(f"Failed to read amalia config from Credential: {e}")
+
+    # Fall back to environment variables
+    if not api_key:
+        api_key = os.environ.get("AMALIA_API_KEY", "dummy")
+    if not base_url:
+        base_url = os.environ.get(
+            "AMALIA_BASE_URL", "https://amalia.novasearch.org/vlm/v1"
+        ).rstrip("/")
+
+    models = []
+
+    # Try dynamic discovery first
+    try:
+        async with httpx.AsyncClient() as client:
+            headers = {}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+
+            response = await client.get(
+                f"{base_url}/models",
+                headers=headers,
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            for model in data.get("data", []):
+                model_id = model.get("id", "")
+                if model_id:
+                    models.append(
+                        DiscoveredModel(
+                            name=model_id,
+                            provider="amalia",
+                            model_type="language",
+                        )
+                    )
+    except Exception as e:
+        logger.warning(f"Failed to dynamically discover Amália models: {e}")
+
+    # Always include the known default model
+    known_model = "carminho/AMALIA-9B-50-DPO"
+    if not any(m.name == known_model for m in models):
+        models.append(
+            DiscoveredModel(
+                name=known_model,
+                provider="amalia",
+                model_type="language",
+                description="AMALIA-9B — Portuguese-optimized LLM by NOVASearch",
+            )
+        )
+
+    return models
+
+
 # =============================================================================
 # Main Discovery Functions
 # =============================================================================
@@ -600,6 +675,7 @@ PROVIDER_DISCOVERY_FUNCTIONS = {
     "voyage": discover_voyage_models,
     "elevenlabs": discover_elevenlabs_models,
     "openai_compatible": discover_openai_compatible_models,
+    "amalia": discover_amalia_models,
     "azure": None,  # Azure requires credential-based discovery (different auth)
     "vertex": None,  # Vertex requires credential-based discovery (service account)
 }

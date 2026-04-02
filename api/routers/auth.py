@@ -172,11 +172,10 @@ async def refresh_token(request: Request):
         if not token:
             raise HTTPException(status_code=401, detail="No token provided")
         
-        # Verify and create new token
-        new_token = JWTManager.refresh_token(token)
-        
-        # Get original token claims
-        payload = JWTManager.verify_token(token)
+        # Refresh: decode expired token and issue new one
+        result = JWTManager.refresh_token(token)
+        new_token = result["token"]
+        payload = result["payload"]
         
         logger.info(f"✅ Token refreshed for user {payload['email']}")
         

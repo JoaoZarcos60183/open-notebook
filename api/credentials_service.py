@@ -57,6 +57,9 @@ PROVIDER_ENV_CONFIG: Dict[str, dict] = {
     "openai_compatible": {
         "required_any": ["OPENAI_COMPATIBLE_BASE_URL", "OPENAI_COMPATIBLE_API_KEY"],
     },
+    "amalia": {
+        "required": [],  # Amália uses a dummy key by default; always available
+    },
 }
 
 PROVIDER_MODALITIES: Dict[str, List[str]] = {
@@ -74,6 +77,7 @@ PROVIDER_MODALITIES: Dict[str, List[str]] = {
     "vertex": ["language", "embedding"],
     "azure": ["language", "embedding", "speech_to_text", "text_to_speech"],
     "openai_compatible": ["language", "embedding", "speech_to_text", "text_to_speech"],
+    "amalia": ["language"],
 }
 
 
@@ -292,6 +296,18 @@ def create_credential_from_env(provider: str) -> Credential:
             modalities=modalities,
             api_key=SecretStr(api_key) if api_key else None,
         )
+    elif provider == "amalia":
+        api_key = os.environ.get("AMALIA_API_KEY", "dummy")
+        base_url = os.environ.get(
+            "AMALIA_BASE_URL", "https://amalia.novasearch.org/vlm/v1"
+        )
+        return Credential(
+            name="Amália (NOVASearch)",
+            provider=provider,
+            modalities=modalities,
+            api_key=SecretStr(api_key),
+            base_url=base_url,
+        )
     else:
         # Simple API key providers
         config = PROVIDER_ENV_CONFIG.get(provider, {})
@@ -397,6 +413,17 @@ async def test_credential(credential_id: str) -> dict:
                 endpoint=config.get("endpoint"),
                 api_key=config.get("api_key"),
                 api_version=config.get("api_version"),
+            )
+            return {"provider": provider, "success": success, "message": message}
+
+        if provider == "amalia":
+            # Amália is an OpenAI-compatible endpoint
+            base_url = config.get(
+                "base_url", "https://amalia.novasearch.org/vlm/v1"
+            )
+            api_key = config.get("api_key", "dummy")
+            success, message = await _test_openai_compatible_connection(
+                base_url, api_key
             )
             return {"provider": provider, "success": success, "message": message}
 
@@ -529,6 +556,32 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
         except Exception as e:
             logger.warning(f"Failed to discover Ollama models: {e}")
             return []
+
+    if provider == "amalia":
+        # Amália is an OpenAI-compatible endpoint
+        amalia_url = (base_url or "https://amalia.novasearch.org/vlm/v1").rstrip("/")
+        amalia_key = api_key or "dummy"
+        known_model = "carminho/AMALIA-9B-50-DPO"
+        models = []
+        try:
+            headers = {"Authorization": f"Bearer {amalia_key}"}
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{amalia_url}/models", headers=headers, timeout=30.0,
+                )
+                response.raise_for_status()
+                data = response.json()
+                models = [
+                    {"name": m.get("id", ""), "provider": "amalia"}
+                    for m in data.get("data", [])
+                    if m.get("id")
+                ]
+        except Exception as e:
+            logger.warning(f"Failed to dynamically discover Amália models: {e}")
+        # Always include the known default model
+        if not any(m["name"] == known_model for m in models):
+            models.append({"name": known_model, "provider": "amalia"})
+        return models
 
     if provider == "openai_compatible":
         if not base_url:

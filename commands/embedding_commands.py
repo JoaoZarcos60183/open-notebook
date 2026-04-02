@@ -477,6 +477,29 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
                 f"(non-fatal): {os_err}"
             )
 
+        # 8. Dual-write: sync to Navy corpus OpenSearch index (best-effort)
+        try:
+            from open_notebook.search.navy_docs import navy_delete_source, navy_index_source
+
+            # Delete old entries first (idempotency)
+            await navy_delete_source(source.title)
+
+            # Index chunks (without embeddings — navy uses BAAI/bge-m3
+            # which we don't generate here; BM25 search still works)
+            navy_indexed = await navy_index_source(
+                source_id=input_data.source_id,
+                source_title=source.title,
+                chunks=chunks,
+            )
+            logger.debug(
+                f"Synced {navy_indexed}/{len(chunks)} chunks to Navy index"
+            )
+        except Exception as navy_err:
+            logger.warning(
+                f"Navy index sync failed for source {input_data.source_id} "
+                f"(non-fatal): {navy_err}"
+            )
+
         processing_time = time.time() - start_time
         logger.info(
             f"Successfully embedded source {input_data.source_id}: "

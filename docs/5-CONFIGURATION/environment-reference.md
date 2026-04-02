@@ -82,6 +82,24 @@ Comprehensive list of all environment variables available in Open Notebook.
 
 ---
 
+## Amália (NOVASearch) & Research
+
+| Variable | Required? | Default | Description |
+|----------|-----------|---------|-------------|
+| `AMALIA_API_KEY` | No | `dummy` | API key for Amália LLM endpoint |
+| `AMALIA_BASE_URL` | No | `https://amalia.novasearch.org/vlm/v1` | Amália API base URL (OpenAI-compatible) |
+| `AMALIA_SMART_LLM` | No | `openai:carminho/AMALIA-9B-50-DPO` | GPTResearcher "smart" model when using Amália |
+| `AMALIA_FAST_LLM` | No | `openai:carminho/AMALIA-9B-50-DPO` | GPTResearcher "fast" model when using Amália |
+| `AMALIA_STRATEGIC_LLM` | No | `openai:carminho/AMALIA-9B-50-DPO` | GPTResearcher "strategic" model when using Amália |
+| `AMALIA_RETRIEVER` | No | `custom` | Retriever type for GPTResearcher |
+| `AMALIA_OPENSEARCH_INDEX` | No | `amalia_navy_test` | OpenSearch index for Amália document retrieval |
+
+Amália is a Portuguese-optimised LLM by NOVASearch. It is always available as a model
+provider and is the default model used by the **Research** feature (GPTResearcher).
+You can also add it via **Settings → API Keys** as an "Amália" credential.
+
+---
+
 ## Network / Proxy
 
 | Variable | Required? | Default | Description |

@@ -62,6 +62,10 @@ PROVIDER_CONFIG = {
     "ollama": {
         "env_var": "OLLAMA_API_BASE",
     },
+    # Amália (NOVASearch) – OpenAI-compatible endpoint
+    "amalia": {
+        "env_var": "AMALIA_API_KEY",
+    },
 }
 
 
@@ -233,6 +237,51 @@ async def _provision_openai_compatible() -> bool:
     return any_set
 
 
+async def _provision_amalia() -> bool:
+    """
+    Set environment variables for the Amália (NOVASearch) provider.
+
+    Amália uses an OpenAI-compatible API at amalia.novasearch.org.
+    When provisioning, we populate OPENAI_COMPATIBLE env vars so that
+    Esperanto's openai-compatible provider can reach the endpoint.
+
+    Falls back to default base_url and a dummy API key when no
+    Credential is stored.
+
+    Returns:
+        True if any keys were set from database or defaults
+    """
+    any_set = False
+
+    # Default Amália endpoint
+    DEFAULT_BASE_URL = "https://amalia.novasearch.org/vlm/v1"
+    DEFAULT_API_KEY = "dummy"
+
+    cred = await _get_default_credential("amalia")
+
+    api_key = DEFAULT_API_KEY
+    base_url = DEFAULT_BASE_URL
+
+    if cred:
+        if cred.api_key:
+            api_key = cred.api_key.get_secret_value()
+        if cred.base_url:
+            base_url = cred.base_url
+
+    # Set Amália-specific env vars (for researcher_service and model_discovery)
+    os.environ["AMALIA_API_KEY"] = api_key
+    os.environ["AMALIA_BASE_URL"] = base_url
+    logger.debug("Set AMALIA_API_KEY and AMALIA_BASE_URL")
+
+    # Also set OPENAI_COMPATIBLE env vars so Esperanto can reach Amália
+    os.environ["OPENAI_COMPATIBLE_API_KEY"] = api_key
+    os.environ["OPENAI_COMPATIBLE_BASE_URL"] = base_url
+    logger.debug("Set OPENAI_COMPATIBLE_* env vars for Amália")
+    any_set = True
+
+    return any_set
+
+
 async def provision_provider_keys(provider: str) -> bool:
     """
     Provision environment variables from database for a specific provider.
@@ -265,6 +314,8 @@ async def provision_provider_keys(provider: str) -> bool:
         return await _provision_azure()
     elif provider_lower in ("openai-compatible", "openai_compatible"):
         return await _provision_openai_compatible()
+    elif provider_lower == "amalia":
+        return await _provision_amalia()
 
     # Handle simple providers
     return await _provision_simple_provider(provider_lower)

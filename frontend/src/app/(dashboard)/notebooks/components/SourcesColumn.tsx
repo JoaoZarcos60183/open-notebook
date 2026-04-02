@@ -21,6 +21,7 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { ContextMode } from '../[id]/page'
 import { CollapsibleColumn, createCollapseButton } from '@/components/notebooks/CollapsibleColumn'
+import { NavyDocsSection } from '@/components/notebooks/NavyDocsSection'
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
@@ -36,6 +37,10 @@ interface SourcesColumnProps {
   hasNextPage?: boolean
   isFetchingNextPage?: boolean
   fetchNextPage?: () => void
+  // Navy corpus document selection
+  selectedNavyDocIds?: Set<string>
+  onNavyDocSelectionChange?: (docId: string, selected: boolean) => void
+  onNavyDocSelectAll?: (selected: boolean) => void
 }
 
 export function SourcesColumn({
@@ -48,6 +53,9 @@ export function SourcesColumn({
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
+  selectedNavyDocIds,
+  onNavyDocSelectionChange,
+  onNavyDocSelectAll,
 }: SourcesColumnProps) {
   const { t } = useTranslation()
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -218,6 +226,17 @@ export function SourcesColumn({
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Navy Corpus Knowledge Base */}
+            {selectedNavyDocIds && onNavyDocSelectionChange && onNavyDocSelectAll && (
+              <div className="mt-4">
+                <NavyDocsSection
+                  selectedDocIds={selectedNavyDocIds}
+                  onSelectionChange={onNavyDocSelectionChange}
+                  onSelectAll={onNavyDocSelectAll}
+                />
               </div>
             )}
           </CardContent>

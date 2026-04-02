@@ -16,9 +16,10 @@ interface ChatColumnProps {
   contextSelections: ContextSelections
   sources: SourceListResponse[]
   sourcesLoading: boolean
+  selectedNavyDocIds?: Set<string>
 }
 
-export function ChatColumn({ notebookId, contextSelections, sources, sourcesLoading }: ChatColumnProps) {
+export function ChatColumn({ notebookId, contextSelections, sources, sourcesLoading, selectedNavyDocIds }: ChatColumnProps) {
   const { t } = useTranslation()
 
   // Fetch notes for this notebook
@@ -29,7 +30,8 @@ export function ChatColumn({ notebookId, contextSelections, sources, sourcesLoad
     notebookId,
     sources,
     notes,
-    contextSelections
+    contextSelections,
+    selectedNavyDocIds
   })
 
   // Calculate context stats for indicator

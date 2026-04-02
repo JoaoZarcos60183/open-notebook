@@ -22,7 +22,7 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
     """
     
     # Paths that don't require JWT authentication
-    # (login/status endpoints that must work without a token)
+    # (login/status/refresh endpoints that must work without a valid token)
     EXEMPT_PATHS = [
         "/health",
         "/docs",
@@ -31,10 +31,12 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
         "/api/auth/status",
         "/api/auth/login",
         "/api/auth/oauth",
+        "/api/auth/token/refresh",
         "/api/config",
         "/auth/status",
         "/auth/login",
         "/auth/oauth",
+        "/auth/auth/token/refresh",
     ]
     
     def __init__(self, app, excluded_paths: Optional[list] = None):

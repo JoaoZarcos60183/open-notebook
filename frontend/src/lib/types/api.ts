@@ -229,13 +229,16 @@ export interface BuildContextRequest {
   context_config: {
     sources: Record<string, string>
     notes: Record<string, string>
+    navy_docs?: { doc_ids: string[] }
   }
+  query?: string
 }
 
 export interface BuildContextResponse {
   context: {
     sources: Array<Record<string, unknown>>
     notes: Array<Record<string, unknown>>
+    navy_corpus?: Array<Record<string, unknown>>
   }
   token_count: number
   char_count: number

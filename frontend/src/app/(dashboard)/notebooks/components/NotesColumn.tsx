@@ -10,11 +10,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, StickyNote, Bot, User, MoreVertical, Trash2 } from 'lucide-react'
+import { Plus, StickyNote, Bot, User, MoreVertical, Trash2, Search } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Badge } from '@/components/ui/badge'
 import { NoteEditorDialog } from './NoteEditorDialog'
+import { NotebookResearchDialog } from './NotebookResearchDialog'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import { formatDistanceToNow } from 'date-fns'
 import { ContextToggle } from '@/components/common/ContextToggle'
@@ -42,6 +43,7 @@ export function NotesColumn({
 }: NotesColumnProps) {
   const { t, language } = useTranslation()
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [showResearchDialog, setShowResearchDialog] = useState(false)
   const [editingNote, setEditingNote] = useState<NoteResponse | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null)
@@ -84,7 +86,16 @@ export function NotesColumn({
           <CardHeader className="pb-3 flex-shrink-0">
             <div className="flex items-center justify-between gap-2">
               <CardTitle className="text-lg">{t.common.notes}</CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowResearchDialog(true)}
+                  title={t.research?.title ?? 'Research'}
+                >
+                  <Search className="h-4 w-4" />
+                  <span className="hidden xl:inline ml-1">{t.research?.title ?? 'Research'}</span>
+                </Button>
                 <Button
                   size="sm"
                   onClick={() => {
@@ -92,8 +103,8 @@ export function NotesColumn({
                     setShowAddDialog(true)
                   }}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t.common.writeNote}
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden xl:inline ml-1">{t.common.writeNote}</span>
                 </Button>
                 {collapseButton}
               </div>
@@ -218,6 +229,12 @@ export function NotesColumn({
         onConfirm={handleDeleteConfirm}
         isLoading={deleteNote.isPending}
         confirmVariant="destructive"
+      />
+
+      <NotebookResearchDialog
+        open={showResearchDialog}
+        onOpenChange={setShowResearchDialog}
+        notebookId={notebookId}
       />
     </>
   )

@@ -44,6 +44,7 @@ import {
   Command,
   LayoutDashboard,
   Shield,
+  FlaskConical,
 } from "lucide-react";
 
 const getNavigation = (t: TranslationKeys, isAdmin: boolean) => {
@@ -61,7 +62,10 @@ const getNavigation = (t: TranslationKeys, isAdmin: boolean) => {
     },
     {
       title: t.navigation.create,
-      items: [{ name: t.navigation.podcasts, href: "/podcasts", icon: Mic }],
+      items: [
+        { name: t.navigation.research ?? "Research", href: "/research", icon: FlaskConical },
+        { name: t.navigation.podcasts, href: "/podcasts", icon: Mic },
+      ],
     },
     {
       title: t.navigation.manage,

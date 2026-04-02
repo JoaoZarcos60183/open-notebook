@@ -74,18 +74,29 @@ class JWTManager:
             raise
     
     @staticmethod
-    def refresh_token(token: str) -> str:
-        """Create a new token from an existing token"""
+    def refresh_token(token: str) -> Dict[str, Any]:
+        """Create a new token from an existing (possibly expired) token.
+        Returns dict with 'token' and 'payload' keys."""
         
         try:
-            payload = JWTManager.verify_token(token)
+            # Decode WITHOUT verifying expiration so expired tokens can be refreshed
+            payload = jwt.decode(
+                token,
+                JWTManager.SECRET,
+                algorithms=[JWTManager.ALGORITHM],
+                options={"verify_exp": False}
+            )
             
             # Create new token with same claims but new expiry
-            return JWTManager.create_token(
+            new_token = JWTManager.create_token(
                 user_id=payload["user_id"],
                 email=payload["email"],
                 roles=payload.get("roles", ["viewer"])
             )
+            return {"token": new_token, "payload": payload}
+        except jwt.InvalidTokenError as e:
+            logger.error(f"Token refresh failed: {e}")
+            raise
         except Exception as e:
             logger.error(f"Token refresh failed: {e}")
             raise

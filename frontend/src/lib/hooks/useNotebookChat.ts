@@ -21,9 +21,10 @@ interface UseNotebookChatParams {
   sources: SourceListResponse[]
   notes: NoteResponse[]
   contextSelections: ContextSelections
+  selectedNavyDocIds?: Set<string>
 }
 
-export function useNotebookChat({ notebookId, sources, notes, contextSelections }: UseNotebookChatParams) {
+export function useNotebookChat({ notebookId, sources, notes, contextSelections, selectedNavyDocIds }: UseNotebookChatParams) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
@@ -130,9 +131,13 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
   })
 
   // Build context from sources and notes based on user selections
-  const buildContext = useCallback(async () => {
+  const buildContext = useCallback(async (query?: string) => {
     // Build context_config mapping IDs to selection modes
-    const context_config: { sources: Record<string, string>, notes: Record<string, string> } = {
+    const context_config: {
+      sources: Record<string, string>
+      notes: Record<string, string>
+      navy_docs?: { doc_ids: string[] }
+    } = {
       sources: {},
       notes: {}
     }
@@ -159,10 +164,16 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       }
     })
 
+    // Include navy corpus document selections
+    if (selectedNavyDocIds && selectedNavyDocIds.size > 0) {
+      context_config.navy_docs = { doc_ids: Array.from(selectedNavyDocIds) }
+    }
+
     // Call API to build context with actual content
     const response = await chatApi.buildContext({
       notebook_id: notebookId,
-      context_config
+      context_config,
+      ...(query ? { query } : {})
     })
 
     // Store token and char counts
@@ -170,7 +181,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     setCharCount(response.char_count)
 
     return response.context
-  }, [notebookId, sources, notes, contextSelections])
+  }, [notebookId, sources, notes, contextSelections, selectedNavyDocIds])
 
   // Send message (synchronous, no streaming)
   const sendMessage = useCallback(async (message: string, modelOverride?: string) => {
@@ -213,8 +224,8 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     setIsSending(true)
 
     try {
-      // Build context and send message
-      const context = await buildContext()
+      // Build context (pass message as query for navy corpus BM25 search)
+      const context = await buildContext(message)
       const response = await chatApi.sendMessage({
         session_id: sessionId,
         message,

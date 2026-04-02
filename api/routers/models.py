@@ -85,6 +85,7 @@ class ModelTestResponse(BaseModel):
 
 # Provider priority for auto-assignment (higher priority first)
 PROVIDER_PRIORITY = [
+    "amalia",
     "openai",
     "anthropic",
     "google",
@@ -100,6 +101,7 @@ PROVIDER_PRIORITY = [
 
 # Model preference patterns (preferred models within each provider)
 MODEL_PREFERENCES = {
+    "amalia": ["carminho/AMALIA-9B-50-DPO"],
     "openai": ["gpt-4o", "gpt-4", "gpt-3.5-turbo"],
     "anthropic": ["claude-3-5-sonnet", "claude-3-opus", "claude-3-sonnet"],
     "google": ["gemini-2.0", "gemini-1.5-pro", "gemini-pro"],
@@ -382,6 +384,7 @@ async def get_provider_availability():
             "voyage": "VOYAGE_API_KEY",
             "elevenlabs": "ELEVENLABS_API_KEY",
             "ollama": "OLLAMA_API_BASE",
+            "amalia": "AMALIA_API_KEY",
         }
 
         provider_status = {}
@@ -391,6 +394,9 @@ async def get_provider_availability():
             has_cred = await _check_provider_has_credential(provider)
             has_env = os.environ.get(env_var) is not None
             provider_status[provider] = has_cred or has_env
+
+        # Amália is always available (uses a dummy API key by default)
+        provider_status["amalia"] = True
 
         # Google also supports GEMINI_API_KEY
         if not provider_status.get("google"):
@@ -464,6 +470,13 @@ async def get_provider_availability():
                 for model_type, providers in esperanto_available.items():
                     if provider in providers:
                         supported_types[provider].append(model_type)
+
+            # Amália is registered under its own name for UI purposes but
+            # is backed by openai-compatible in Esperanto.  If Amália is
+            # available, manually declare it as supporting "language".
+            if provider == "amalia":
+                if "language" not in supported_types[provider]:
+                    supported_types[provider].append("language")
 
         return ProviderAvailabilityResponse(
             available=available_providers,
@@ -696,6 +709,13 @@ async def auto_assign_defaults():
     """
     try:
         from open_notebook.database.repository import repo_query
+
+        # Ensure Amália models exist in the DB (always-available provider)
+        try:
+            await provision_provider_keys("amalia")
+            await sync_provider_models("amalia", auto_register=True)
+        except Exception as e:
+            logger.warning(f"Failed to sync Amália models before auto-assign: {e}")
 
         # Get current defaults
         defaults = await DefaultModels.get_instance()
