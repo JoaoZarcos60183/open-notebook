@@ -398,6 +398,9 @@ async def get_provider_availability():
         # Amália is always available (uses a dummy API key by default)
         provider_status["amalia"] = True
 
+        # Transformers (HuggingFace local models) are always available — no API key needed
+        provider_status["transformers"] = True
+
         # Google also supports GEMINI_API_KEY
         if not provider_status.get("google"):
             provider_status["google"] = os.environ.get("GEMINI_API_KEY") is not None

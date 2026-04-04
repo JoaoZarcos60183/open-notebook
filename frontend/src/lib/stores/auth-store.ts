@@ -456,7 +456,8 @@ export const useAuthStore = create<AuthState>()(
               isCheckingAuth: false,
             });
             return true;
-          } else {
+          } else if (response.status === 401 || response.status === 403) {
+            // Explicit rejection — token invalid or expired, log out
             set({
               isAuthenticated: false,
               token: null,
@@ -465,17 +466,19 @@ export const useAuthStore = create<AuthState>()(
               isCheckingAuth: false,
             });
             return false;
+          } else {
+            // Server error (5xx) — keep existing auth state, don't log out
+            set({ isCheckingAuth: false });
+            return isAuthenticated;
           }
         } catch (error) {
-          console.error("checkAuth error:", error);
-          set({
-            isAuthenticated: false,
-            token: null,
-            user: null,
-            lastAuthCheck: null,
-            isCheckingAuth: false,
-          });
-          return false;
+          // Network error — keep existing auth state, don't log out
+          console.warn(
+            "checkAuth network error, keeping existing auth state:",
+            error,
+          );
+          set({ isCheckingAuth: false });
+          return isAuthenticated;
         }
       },
     }),
@@ -485,6 +488,7 @@ export const useAuthStore = create<AuthState>()(
         token: state.token,
         isAuthenticated: state.isAuthenticated,
         user: state.user,
+        lastAuthCheck: state.lastAuthCheck,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);

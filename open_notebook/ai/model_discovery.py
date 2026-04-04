@@ -518,6 +518,40 @@ async def discover_elevenlabs_models() -> List[DiscoveredModel]:
     ]
 
 
+async def discover_transformers_models() -> List[DiscoveredModel]:
+    """Return static list of HuggingFace Transformers embedding models.
+
+    These run locally — no API key required. The list includes the model
+    configured via AMALIA_EMBEDDING plus other commonly useful models.
+    """
+    # Always include the model configured in the environment
+    amalia_embedding = os.environ.get("AMALIA_EMBEDDING", "")
+    amalia_model = None
+    if amalia_embedding and ":" in amalia_embedding:
+        # Strip the provider prefix (e.g. "huggingface:BAAI/bge-m3" -> "BAAI/bge-m3")
+        amalia_model = amalia_embedding.split(":", 1)[1]
+
+    default_models = [
+        ("BAAI/bge-m3", "Multilingual embedding model by BAAI (used by Amália/NOVA-Researcher)"),
+        ("sentence-transformers/all-MiniLM-L6-v2", "Lightweight general-purpose sentence embedding model"),
+        ("sentence-transformers/paraphrase-multilingual-mpnet-base-v2", "Multilingual paraphrase embedding model"),
+    ]
+
+    # If the configured model is not already in the list, prepend it
+    if amalia_model and not any(name == amalia_model for name, _ in default_models):
+        default_models.insert(0, (amalia_model, f"Configured via AMALIA_EMBEDDING"))
+
+    return [
+        DiscoveredModel(
+            name=name,
+            provider="transformers",
+            model_type="embedding",
+            description=description,
+        )
+        for name, description in default_models
+    ]
+
+
 async def discover_openai_compatible_models() -> List[DiscoveredModel]:
     """
     Fetch available models from an OpenAI-compatible API endpoint.
@@ -676,6 +710,7 @@ PROVIDER_DISCOVERY_FUNCTIONS = {
     "elevenlabs": discover_elevenlabs_models,
     "openai_compatible": discover_openai_compatible_models,
     "amalia": discover_amalia_models,
+    "transformers": discover_transformers_models,
     "azure": None,  # Azure requires credential-based discovery (different auth)
     "vertex": None,  # Vertex requires credential-based discovery (service account)
 }
