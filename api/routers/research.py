@@ -44,6 +44,7 @@ class GenerateResearchRequest(BaseModel):
     tone: str = "Objective"
     source_urls: List[str] = []
     notebook_id: Optional[str] = None
+    model_id: Optional[str] = None
     use_amalia: bool = True
     run_in_background: bool = True
 
@@ -122,6 +123,7 @@ async def generate_research(request: GenerateResearchRequest):
             tone=ResearchTone(request.tone),
             source_urls=request.source_urls,
             notebook_id=request.notebook_id,
+            model_id=request.model_id,
             use_amalia=request.use_amalia,
         )
 
@@ -171,6 +173,8 @@ async def list_jobs():
                 "created_at": j.created_at,
                 "error": j.error,
                 "has_result": j.result is not None,
+                "tone": j.tone,
+                "model_id": j.model_id,
             }
             for j in jobs
         ]
@@ -192,6 +196,9 @@ async def get_job(job_id: str):
         "progress": job.progress,
         "created_at": job.created_at,
         "error": job.error,
+        "has_result": job.result is not None,
+        "tone": job.tone,
+        "model_id": job.model_id,
     }
 
     if job.result:
@@ -200,6 +207,9 @@ async def get_job(job_id: str):
             "source_urls": job.result.source_urls,
             "research_costs": job.result.research_costs,
             "images": job.result.images,
+            "tone": job.result.tone,
+            "model_id": job.result.model_id,
+            "retrieved_documents": job.result.retrieved_documents,
         }
 
     return response
@@ -233,20 +243,9 @@ async def save_research_as_note(request: SaveResearchAsNoteRequest):
             title=title,
             content=job.result.report,
             note_type="ai",
-            notebook_id=request.notebook_id,
         )
         await note.save()
-
-        # Link note to notebook
-        from open_notebook.database.repository import repo_query
-
-        await repo_query(
-            "RELATE $notebook->artifact->$note",
-            {
-                "notebook": request.notebook_id,
-                "note": note.id,
-            },
-        )
+        await note.add_to_notebook(request.notebook_id)
 
         logger.info(
             f"Saved research result {request.research_id} as note {note.id} "

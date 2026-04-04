@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -20,7 +19,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, Sparkles } from "lucide-react";
 import {
   useReportTypes,
@@ -28,22 +26,34 @@ import {
   useGenerateResearch,
 } from "@/lib/hooks/use-research";
 import { useTranslation } from "@/lib/hooks/use-translation";
+import { ModelSelector } from "@/components/common/ModelSelector";
+import { useModelDefaults } from "@/lib/hooks/use-models";
 
 interface ResearchGeneratePanelProps {
   onJobStarted?: () => void;
 }
 
-export function ResearchGeneratePanel({ onJobStarted }: ResearchGeneratePanelProps) {
+export function ResearchGeneratePanel({
+  onJobStarted,
+}: ResearchGeneratePanelProps) {
   const { t } = useTranslation();
   const { data: reportTypes, isLoading: typesLoading } = useReportTypes();
   const { data: tones, isLoading: tonesLoading } = useResearchTones();
   const generateMutation = useGenerateResearch();
+  const { data: modelDefaults } = useModelDefaults();
 
   const [query, setQuery] = useState("");
   const [reportType, setReportType] = useState("research_report");
   const [tone, setTone] = useState("Objective");
-  const [useAmalia, setUseAmalia] = useState(true);
+  const [modelId, setModelId] = useState("");
   const [sourceUrls, setSourceUrls] = useState("");
+
+  // Pre-select the default chat model once loaded
+  useEffect(() => {
+    if (!modelId && modelDefaults?.default_chat_model) {
+      setModelId(modelDefaults.default_chat_model);
+    }
+  }, [modelDefaults?.default_chat_model]);
 
   const isLoading = typesLoading || tonesLoading;
   const isSubmitting = generateMutation.isPending;
@@ -63,7 +73,8 @@ export function ResearchGeneratePanel({ onJobStarted }: ResearchGeneratePanelPro
       report_source: "local",
       tone,
       source_urls: urls,
-      use_amalia: useAmalia,
+      model_id: modelId || undefined,
+      use_amalia: !!modelId,
       run_in_background: true,
     });
 
@@ -108,7 +119,11 @@ export function ResearchGeneratePanel({ onJobStarted }: ResearchGeneratePanelPro
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Select value={reportType} onValueChange={setReportType} disabled={isSubmitting}>
+            <Select
+              value={reportType}
+              onValueChange={setReportType}
+              disabled={isSubmitting}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -138,7 +153,11 @@ export function ResearchGeneratePanel({ onJobStarted }: ResearchGeneratePanelPro
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Select value={tone} onValueChange={setTone} disabled={isSubmitting}>
+            <Select
+              value={tone}
+              onValueChange={setTone}
+              disabled={isSubmitting}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -160,36 +179,18 @@ export function ResearchGeneratePanel({ onJobStarted }: ResearchGeneratePanelPro
               <Sparkles className="h-4 w-4" />
               {t.research?.modelLabel ?? "AI Model"}
             </CardTitle>
+            <CardDescription>
+              Select the language model to use for generating the report.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center gap-3">
-              <Checkbox
-                id="use-amalia"
-                checked={useAmalia}
-                onCheckedChange={(checked) => setUseAmalia(!!checked)}
-                disabled={isSubmitting}
-              />
-              <div className="space-y-1">
-                <Label htmlFor="use-amalia" className="text-sm font-medium cursor-pointer">
-                  {t.research?.useAmalia ?? "Use Amália"}
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  {t.research?.amaliaDescription ??
-                    "AMALIA-9B — Portuguese-optimized model by NOVASearch"}
-                </p>
-              </div>
-            </div>
-            {useAmalia && (
-              <Badge variant="secondary" className="text-xs">
-                carminho/AMALIA-9B-50-DPO
-              </Badge>
-            )}
-            {!useAmalia && (
-              <p className="text-xs text-muted-foreground">
-                {t.research?.defaultModelNote ??
-                  "Will use the default GPTResearcher model (GPT-4o-mini)"}
-              </p>
-            )}
+          <CardContent>
+            <ModelSelector
+              modelType="language"
+              value={modelId}
+              onChange={setModelId}
+              placeholder="Select a model..."
+              disabled={isSubmitting}
+            />
           </CardContent>
         </Card>
       </div>

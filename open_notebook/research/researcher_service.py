@@ -8,6 +8,7 @@ tones, and sources including the Amália model.
 
 import json
 import os
+import re
 import sys
 import uuid
 from datetime import datetime
@@ -77,7 +78,15 @@ class ResearchRequest(BaseModel):
     tone: ResearchTone = ResearchTone.OBJECTIVE
     source_urls: List[str] = []
     notebook_id: Optional[str] = None
+    model_id: Optional[str] = None
     use_amalia: bool = True  # Default to Amália model
+
+
+class RetrievedDocument(BaseModel):
+    """A document retrieved during research."""
+    title: str = ""
+    source: str = ""
+    snippet: str = ""
 
 
 class ResearchResult(BaseModel):
@@ -92,6 +101,9 @@ class ResearchResult(BaseModel):
     status: str = "completed"
     created_at: str = ""
     error: Optional[str] = None
+    tone: Optional[str] = None
+    model_id: Optional[str] = None
+    retrieved_documents: List[RetrievedDocument] = []
 
 
 class ResearchJob(BaseModel):
@@ -104,6 +116,9 @@ class ResearchJob(BaseModel):
     result: Optional[ResearchResult] = None
     created_at: str = ""
     error: Optional[str] = None
+    tone: Optional[str] = None
+    model_id: Optional[str] = None
+    notebook_id: Optional[str] = None
 
 
 # ── Persistent job store ──────────────────────────────────────────────
@@ -169,7 +184,7 @@ def _setup_amalia_env_llm_only():
         # Use a local HuggingFace model so compression/similarity steps work.
         "EMBEDDING": os.environ.get(
             "AMALIA_EMBEDDING",
-            "huggingface:sentence-transformers/all-MiniLM-L6-v2",
+            "huggingface:BAAI/bge-m3",
         ),
     }
     for key, value in amalia_vars.items():
@@ -199,7 +214,7 @@ def _setup_amalia_env():
         # Use a local HuggingFace model so compression/similarity steps work.
         "EMBEDDING": os.environ.get(
             "AMALIA_EMBEDDING",
-            "huggingface:sentence-transformers/all-MiniLM-L6-v2",
+            "huggingface:BAAI/bge-m3",
         ),
     }
     for key, value in amalia_vars.items():
@@ -285,8 +300,21 @@ async def _run_ttd_dr(request: ResearchRequest, job_id: str) -> ResearchResult:
 
         report = await flow.run()
 
+        # Post-process to strip hallucinated references
+        report = _strip_references(report)
+
         # Collect sources gathered during the iterative process
         source_urls = list(flow._retrieved_sources) if flow._retrieved_sources else []
+
+        # Build retrieved documents list for the UI
+        retrieved_docs = []
+        if lc_docs:
+            for doc in lc_docs:
+                retrieved_docs.append(RetrievedDocument(
+                    title=doc.metadata.get("title", ""),
+                    source=doc.metadata.get("source", ""),
+                    snippet=doc.page_content[:300] if doc.page_content else "",
+                ))
 
         result = ResearchResult(
             id=job_id,
@@ -297,6 +325,9 @@ async def _run_ttd_dr(request: ResearchRequest, job_id: str) -> ResearchResult:
             research_costs=0.0,
             status="completed",
             created_at=datetime.utcnow().isoformat(),
+            tone=request.tone.value,
+            model_id=request.model_id,
+            retrieved_documents=retrieved_docs,
         )
 
         logger.success(
@@ -360,6 +391,45 @@ async def _prefetch_opensearch_docs(query: str, index: str, max_results: int = 3
     return lc_docs
 
 
+def _strip_references(report: str) -> str:
+    """
+    Post-process a generated report to remove:
+    - Reference / bibliography sections at the end
+    - In-text citation markers like [1], [2], (in-text citation), etc.
+    - Trailing "Notas Finais" or similar filler sections with fabricated references
+    """
+    # Remove reference/bibliography sections at the end of the report.
+    # Match common headers in both English and Portuguese.
+    ref_pattern = re.compile(
+        r'\n#{1,3}\s*'
+        r'(Refer[eê]ncias(\s+Bibliogr[aá]ficas)?'
+        r'|Bibliography'
+        r'|References'
+        r'|Sources'
+        r'|Fontes'
+        r'|Notas\s+Finais'
+        r'|Referências\s+Bibliográficas)'
+        r'\s*\n.*',
+        re.IGNORECASE | re.DOTALL,
+    )
+    report = ref_pattern.sub('', report)
+
+    # Remove in-text citation numbers like [1], [2], [1,2], [1-3]
+    report = re.sub(r'\s*\[[\d,\s\-]+\]', '', report)
+
+    # Remove APA-style in-text citations like ([in-text citation](url)) or (in-text citation)
+    report = re.sub(r'\s*\(\[?[^)]*in-text citation[^)]*\]?\)', '', report, flags=re.IGNORECASE)
+
+    # Remove markdown hyperlink citations at end of sentences like ([Title](url))
+    # but only when they look like citation references (at end of sentence before period)
+    report = re.sub(r'\s*\(\[[^\]]+\]\([^)]+\)\)\.?', '', report)
+
+    # Clean up any trailing whitespace
+    report = report.rstrip()
+
+    return report
+
+
 async def run_research(request: ResearchRequest) -> ResearchResult:
     """
     Execute a research query using GPTResearcher.
@@ -370,6 +440,7 @@ async def run_research(request: ResearchRequest) -> ResearchResult:
       and injects it as LangChain documents so GPTResearcher can do per-sub-query
       semantic similarity search over the pre-loaded content.
     - Collecting results and metadata
+    - Post-processing to strip hallucinated references
     """
     from gpt_researcher import GPTResearcher
     from gpt_researcher.utils.enum import Tone as GptTone
@@ -403,6 +474,7 @@ async def run_research(request: ResearchRequest) -> ResearchResult:
             f"amalia={request.use_amalia}"
         )
 
+        lc_docs = []
         if request.use_amalia:
             # ── Amália path: retrieve context from navy OpenSearch corpus ──────
             # GPTResearcher's CustomRetriever returns "url" not "href", so the
@@ -457,6 +529,9 @@ async def run_research(request: ResearchRequest) -> ResearchResult:
         logger.info(f"Job {job_id}: Writing report...")
         report = await researcher.write_report()
 
+        # Phase 3: Post-process to strip hallucinated references
+        report = _strip_references(report)
+
         # Collect metadata
         source_urls = researcher.get_source_urls() if hasattr(researcher, 'get_source_urls') else []
         # For langchain_documents path the researcher may not populate source_urls itself,
@@ -470,6 +545,16 @@ async def run_research(request: ResearchRequest) -> ResearchResult:
         costs = researcher.get_costs() if hasattr(researcher, 'get_costs') else 0.0
         images = researcher.get_research_images() if hasattr(researcher, 'get_research_images') else []
 
+        # Build retrieved documents list for the UI
+        retrieved_docs = []
+        if lc_docs:
+            for doc in lc_docs:
+                retrieved_docs.append(RetrievedDocument(
+                    title=doc.metadata.get("title", ""),
+                    source=doc.metadata.get("source", ""),
+                    snippet=doc.page_content[:300] if doc.page_content else "",
+                ))
+
         result = ResearchResult(
             id=job_id,
             query=request.query,
@@ -480,6 +565,9 @@ async def run_research(request: ResearchRequest) -> ResearchResult:
             images=images,
             status="completed",
             created_at=datetime.utcnow().isoformat(),
+            tone=request.tone.value,
+            model_id=request.model_id,
+            retrieved_documents=retrieved_docs,
         )
 
         logger.success(
@@ -523,6 +611,9 @@ async def submit_research_job(request: ResearchRequest) -> ResearchJob:
         report_type=request.report_type.value,
         status="pending",
         created_at=now,
+        tone=request.tone.value,
+        model_id=request.model_id,
+        notebook_id=request.notebook_id,
     )
     _jobs[job_id] = job
     _save_jobs()
@@ -537,6 +628,7 @@ async def submit_research_job(request: ResearchRequest) -> ResearchJob:
             job.status = result.status
             job.error = result.error
             job.progress = "Completed" if result.status == "completed" else "Failed"
+
         except Exception as e:
             job.status = "failed"
             job.error = str(e)

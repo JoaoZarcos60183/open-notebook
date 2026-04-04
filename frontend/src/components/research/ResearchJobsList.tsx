@@ -96,7 +96,11 @@ function ReportTypeLabel({ type }: { type: string }) {
     deep: "Deep Research",
     ttd_dr: "TTD-DR Deep Research",
   };
-  return <span className="text-xs text-muted-foreground">{labels[type] ?? type}</span>;
+  return (
+    <span className="text-xs text-muted-foreground">
+      {labels[type] ?? type}
+    </span>
+  );
 }
 
 export function ResearchJobsList() {
@@ -174,7 +178,8 @@ export function ResearchJobsList() {
         {hasActiveJobs && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            {t.research?.activeJobs ?? "Research in progress — auto-refreshing..."}
+            {t.research?.activeJobs ??
+              "Research in progress — auto-refreshing..."}
           </div>
         )}
 
@@ -186,8 +191,13 @@ export function ResearchJobsList() {
                   <CardTitle className="text-base line-clamp-2">
                     {job.query}
                   </CardTitle>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <ReportTypeLabel type={job.report_type} />
+                    {job.tone && (
+                      <Badge variant="outline" className="text-xs py-0">
+                        {job.tone}
+                      </Badge>
+                    )}
                     <span className="text-xs text-muted-foreground">
                       {job.created_at
                         ? new Date(job.created_at).toLocaleString()
@@ -266,9 +276,7 @@ export function ResearchJobsList() {
       >
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {selectedJob?.query ?? "Research Report"}
-            </DialogTitle>
+            <DialogTitle>{selectedJob?.query ?? "Research Report"}</DialogTitle>
             <DialogDescription>
               <ReportTypeLabel type={selectedJob?.report_type ?? ""} />
             </DialogDescription>
@@ -283,37 +291,57 @@ export function ResearchJobsList() {
                 </ReactMarkdown>
               </div>
 
-              {/* Sources */}
-              {selectedJob.result.source_urls.length > 0 && (
-                <div className="border-t pt-4">
-                  <h4 className="font-medium mb-2">
-                    {t.research?.sourcesUsed ?? "Sources Used"} (
-                    {selectedJob.result.source_urls.length})
-                  </h4>
-                  <ul className="space-y-1">
-                    {selectedJob.result.source_urls.map((url, i) => (
-                      <li key={i} className="flex items-center gap-1 text-sm">
-                        <ExternalLink className="h-3 w-3 flex-shrink-0" />
+              {/* Source Documents */}
+              {selectedJob.result.retrieved_documents &&
+                selectedJob.result.retrieved_documents.length > 0 && (
+                  <div className="border-t pt-4">
+                    <h4 className="font-medium mb-2">
+                      Source Documents (
+                      {selectedJob.result.retrieved_documents.length})
+                    </h4>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                      {selectedJob.result.retrieved_documents.map((doc, i) => (
                         <a
-                          href={url}
+                          key={i}
+                          href={doc.source || "#"}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary hover:underline truncate"
+                          className="block rounded-md border p-3 text-sm space-y-1 hover:bg-accent/50 transition-colors cursor-pointer"
                         >
-                          {url}
+                          <div className="font-medium flex items-center gap-1">
+                            <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                            {doc.title || doc.source || `Document ${i + 1}`}
+                          </div>
+                          {doc.snippet && (
+                            <p className="text-xs text-muted-foreground line-clamp-3">
+                              {doc.snippet}
+                            </p>
+                          )}
                         </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-              {/* Metadata */}
-              {selectedJob.result.research_costs > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Research cost: ${selectedJob.result.research_costs.toFixed(4)}
-                </p>
-              )}
+              {/* Settings used */}
+              <div className="border-t pt-4">
+                <h4 className="font-medium mb-2">Research Configuration</h4>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline">
+                    <ReportTypeLabel type={selectedJob.report_type} />
+                  </Badge>
+                  {selectedJob.result.tone && (
+                    <Badge variant="outline">
+                      Tone: {selectedJob.result.tone}
+                    </Badge>
+                  )}
+                  {selectedJob.result.model_id && (
+                    <Badge variant="outline">
+                      Model: {selectedJob.result.model_id}
+                    </Badge>
+                  )}
+                </div>
+              </div>
 
               {/* Actions */}
               <div className="flex gap-2 border-t pt-4">
@@ -372,13 +400,13 @@ export function ResearchJobsList() {
                 />
               </SelectTrigger>
               <SelectContent>
-                {(notebooks as Array<{ id: string; name: string }> | undefined)?.map(
-                  (nb) => (
-                    <SelectItem key={nb.id} value={nb.id}>
-                      {nb.name}
-                    </SelectItem>
-                  )
-                )}
+                {(
+                  notebooks as Array<{ id: string; name: string }> | undefined
+                )?.map((nb) => (
+                  <SelectItem key={nb.id} value={nb.id}>
+                    {nb.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
