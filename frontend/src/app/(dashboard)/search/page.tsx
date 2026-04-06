@@ -203,7 +203,7 @@ export default function SearchPage() {
           >
             <TabsTrigger value="ask">
               <MessageCircleQuestion className="h-4 w-4" />
-              {t.searchPage.askBeta}
+              {t.searchPage.ask}
             </TabsTrigger>
             <TabsTrigger value="search">
               <Search className="h-4 w-4" />

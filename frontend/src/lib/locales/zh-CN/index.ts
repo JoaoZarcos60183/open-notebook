@@ -441,7 +441,7 @@ export const zhCN = {
   searchPage: {
     askAndSearch: "提问与搜索",
     chooseAMode: "选择模式",
-    askBeta: "提问 (beta)",
+
     search: "搜索",
     askYourKb: "向您的知识库提问 (beta)",
     askYourKbDesc: "大语言模型将根据您知识库中的文档回答您的查询。",

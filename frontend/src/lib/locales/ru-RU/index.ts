@@ -441,7 +441,7 @@ export const ruRU = {
   searchPage: {
     askAndSearch: "Запрос и поиск",
     chooseAMode: "Выберите режим",
-    askBeta: "Запрос (бета)",
+
     search: "Поиск",
     askYourKb: "Спросите базу знаний (бета)",
     askYourKbDesc: "LLM ответит на ваш запрос на основе документов в базе знаний.",

@@ -441,7 +441,7 @@ export const zhTW = {
   searchPage: {
     askAndSearch: "提問與搜尋",
     chooseAMode: "選擇模式",
-    askBeta: "提問 (beta)",
+
     search: "搜尋",
     askYourKb: "向您的知識庫提問 (beta)",
     askYourKbDesc: "大語言模型將根據您知識庫中的文件回答您的查詢。",

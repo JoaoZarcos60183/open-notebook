@@ -453,9 +453,8 @@ export const enUS = {
   searchPage: {
     askAndSearch: "Ask and Search",
     chooseAMode: "Choose a mode",
-    askBeta: "Ask (beta)",
     search: "Search",
-    askYourKb: "Ask Your Knowledge Base (beta)",
+    askYourKb: "Ask Your Knowledge Base",
     askYourKbDesc: "The LLM will answer your query based on the documents in your knowledge base.",
     question: "Question",
     enterQuestionPlaceholder: "Enter your question...",

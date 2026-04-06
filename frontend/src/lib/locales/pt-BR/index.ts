@@ -453,7 +453,7 @@ export const ptBR = {
   searchPage: {
     askAndSearch: "Perguntar e Buscar",
     chooseAMode: "Escolha um modo",
-    askBeta: "Perguntar (beta)",
+
     search: "Buscar",
     askYourKb: "Pergunte à Sua Base de Conhecimento (beta)",
     askYourKbDesc: "O LLM responderá sua consulta com base nos documentos da sua base de conhecimento.",

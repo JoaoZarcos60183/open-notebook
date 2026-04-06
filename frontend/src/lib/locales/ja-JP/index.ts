@@ -441,7 +441,7 @@ export const jaJP = {
   searchPage: {
     askAndSearch: "質問と検索",
     chooseAMode: "モードを選択",
-    askBeta: "質問（ベータ）",
+
     search: "検索",
     askYourKb: "ナレッジベースに質問（ベータ）",
     askYourKbDesc: "LLMがナレッジベース内のドキュメントに基づいてクエリに回答します。",

@@ -441,7 +441,7 @@ export const frFR = {
   searchPage: {
     askAndSearch: "Poser une question et Rechercher",
     chooseAMode: "Choisir un mode",
-    askBeta: "Demander (bêta)",
+
     search: "Recherche",
     askYourKb: "Interroger votre base de connaissances (bêta)",
     askYourKbDesc: "Le LLM répondra à votre requête en se basant sur les documents de votre base de connaissances.",

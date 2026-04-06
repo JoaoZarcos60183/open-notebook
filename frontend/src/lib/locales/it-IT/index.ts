@@ -441,7 +441,7 @@ export const itIT = {
   searchPage: {
     askAndSearch: "Chiedi e cerca",
     chooseAMode: "Scegli una modalità",
-    askBeta: "Chiedi (beta)",
+
     search: "Cerca",
     askYourKb: "Chiedi alla tua base di conoscenza (beta)",
     askYourKbDesc: "L'LLM risponderà alla tua domanda basandosi sui documenti nella tua base di conoscenza.",

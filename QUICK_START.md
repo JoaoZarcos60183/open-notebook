@@ -7,8 +7,7 @@
 ## 1. Start SurrealDB
 
 ```bash
-docker run -d --name surrealdb -p 8000:8000 \
-  surrealdb/surrealdb:latest start -u root -p root
+docker run -d --name surrealdb -p 8000:8000 -v surrealdb_data:/data --user root surrealdb/surrealdb:latest start -u root -p root surrealkv:///data/mydatabase.db
 ```
 
 ## 2. Install Dependencies
