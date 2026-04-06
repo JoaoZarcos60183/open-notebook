@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Card,
   CardContent,
@@ -213,6 +214,14 @@ export function ResearchJobsList() {
                 <p className="text-sm text-muted-foreground mb-3">
                   {job.progress}
                 </p>
+              )}
+              {job.status === "running" && (
+                <div className="mb-3 space-y-1">
+                  <Progress value={job.progress_pct ?? 0} className="h-2" />
+                  <p className="text-xs text-muted-foreground text-right">
+                    {job.progress_pct ?? 0}%
+                  </p>
+                </div>
               )}
               {job.error && (
                 <p className="text-sm text-destructive mb-3">{job.error}</p>

@@ -151,12 +151,18 @@ async def ask_knowledge_base(ask_request: AskRequest):
                 detail="Ask feature requires an embedding model. Please configure one in the Models section.",
             )
 
-        # For streaming response
+        # For streaming response — use proper SSE content type and disable
+        # proxy buffering so Next.js / nginx forward chunks immediately.
         return StreamingResponse(
             stream_ask_response(
                 ask_request.question, strategy_model, answer_model, final_answer_model
             ),
-            media_type="text/plain",
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
         )
 
     except HTTPException:

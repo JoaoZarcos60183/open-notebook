@@ -113,6 +113,7 @@ class ResearchJob(BaseModel):
     report_type: str
     status: str = "pending"  # pending, running, completed, failed
     progress: str = ""
+    progress_pct: int = 0  # 0-100 percentage for progress bar
     result: Optional[ResearchResult] = None
     created_at: str = ""
     error: Optional[str] = None
@@ -234,7 +235,7 @@ def _restore_env(saved_env: Dict[str, Optional[str]]):
 # ── Core Research Execution ───────────────────────────────────────────
 
 
-async def _run_ttd_dr(request: ResearchRequest, job_id: str) -> ResearchResult:
+async def _run_ttd_dr(request: ResearchRequest, job_id: str, progress_callback=None) -> ResearchResult:
     """Execute research using the TTD-DR (Iterative Draft Denoising) flow."""
     import importlib.util
 
@@ -296,6 +297,7 @@ async def _run_ttd_dr(request: ResearchRequest, job_id: str) -> ResearchResult:
             source_urls=request.source_urls if request.source_urls else None,
             tone=None,
             documents=lc_docs if lc_docs else None,
+            progress_callback=progress_callback,
         )
 
         report = await flow.run()
@@ -430,7 +432,7 @@ def _strip_references(report: str) -> str:
     return report
 
 
-async def run_research(request: ResearchRequest) -> ResearchResult:
+async def run_research(request: ResearchRequest, progress_callback=None) -> ResearchResult:
     """
     Execute a research query using GPTResearcher.
 
@@ -447,20 +449,19 @@ async def run_research(request: ResearchRequest) -> ResearchResult:
 
     job_id = str(uuid.uuid4())[:8]
 
-    # ── TTD-DR uses its own flow class ──────────────────────────────
+    # ── TTD-DR uses its own flow class ────────────────────────────────
     if request.report_type == ResearchReportType.TTD_DR:
-        return await _run_ttd_dr(request, job_id)
+        return await _run_ttd_dr(request, job_id, progress_callback=progress_callback)
 
-    # Save current env if using Amália
+    # Always save + apply Amália LLM env vars — Amália is the only available LLM.
+    # use_amalia controls whether to also use the OpenSearch retriever, not the LLM.
     saved_env: Dict[str, Optional[str]] = {}
-    if request.use_amalia:
-        for key in [
-            "OPENAI_API_KEY", "OPENAI_BASE_URL", "SMART_LLM",
-            "FAST_LLM", "STRATEGIC_LLM", "OPENSEARCH_INDEX", "EMBEDDING",
-        ]:
-            saved_env[key] = os.environ.get(key)
-        # Set only LLM env vars — retrieval is handled via pre-fetched docs below
-        _setup_amalia_env_llm_only()
+    for key in [
+        "OPENAI_API_KEY", "OPENAI_BASE_URL", "SMART_LLM",
+        "FAST_LLM", "STRATEGIC_LLM", "OPENSEARCH_INDEX", "EMBEDDING",
+    ]:
+        saved_env[key] = os.environ.get(key)
+    _setup_amalia_env_llm_only()
 
     try:
         # Map tone
@@ -475,61 +476,54 @@ async def run_research(request: ResearchRequest) -> ResearchResult:
         )
 
         lc_docs = []
-        if request.use_amalia:
-            # ── Amália path: retrieve context from navy OpenSearch corpus ──────
-            # GPTResearcher's CustomRetriever returns "url" not "href", so the
-            # standard web-search pipeline discards all content before it reaches
-            # the LLM.  We pre-fetch docs here and inject them via the
-            # langchain_documents report source, which feeds content directly to
-            # the per-sub-query vector similarity step (no HTTP scraping needed).
-            navy_index = NAVY_OPENSEARCH_INDEX
-            lc_docs = await _prefetch_opensearch_docs(
-                query=request.query,
-                index=navy_index,
-                max_results=int(os.environ.get("AMALIA_PREFETCH_DOCS", "30")),
-            )
+        # Always pre-fetch from the navy OpenSearch corpus — Amália is the only
+        # available LLM and "local" report_source has no local files configured.
+        # use_amalia only controls the retriever env-var; docs always come from OpenSearch.
+        navy_index = NAVY_OPENSEARCH_INDEX
+        lc_docs = await _prefetch_opensearch_docs(
+            query=request.query,
+            index=navy_index,
+            max_results=int(os.environ.get("AMALIA_PREFETCH_DOCS", "30")),
+        )
 
-            if lc_docs:
-                logger.info(
-                    f"Job {job_id}: Using {len(lc_docs)} pre-fetched OpenSearch docs "
-                    f"via langchain_documents source."
-                )
-                researcher = GPTResearcher(
-                    query=request.query,
-                    report_type=request.report_type.value,
-                    report_source="langchain_documents",
-                    tone=gpt_tone,
-                    documents=lc_docs,
-                )
-            else:
-                logger.warning(
-                    f"Job {job_id}: OpenSearch returned no docs; falling back to web search."
-                )
-                researcher = GPTResearcher(
-                    query=request.query,
-                    report_type=request.report_type.value,
-                    report_source="web",
-                    tone=gpt_tone,
-                )
-        else:
-            # ── Standard path: use whatever source the request specifies ───────
+        if lc_docs:
+            logger.info(
+                f"Job {job_id}: Using {len(lc_docs)} pre-fetched OpenSearch docs "
+                f"via langchain_documents source."
+            )
             researcher = GPTResearcher(
                 query=request.query,
                 report_type=request.report_type.value,
-                report_source=request.report_source.value,
+                report_source="langchain_documents",
                 tone=gpt_tone,
-                source_urls=request.source_urls if request.source_urls else None,
+                documents=lc_docs,
+            )
+        else:
+            logger.warning(
+                f"Job {job_id}: OpenSearch returned no docs; falling back to web search."
+            )
+            researcher = GPTResearcher(
+                query=request.query,
+                report_type=request.report_type.value,
+                report_source="web",
+                tone=gpt_tone,
             )
 
         # Phase 1: Conduct research (gather context)
         logger.info(f"Job {job_id}: Conducting research...")
+        if progress_callback:
+            await progress_callback(20, "Fase 1: A recolher informação...")
         await researcher.conduct_research()
 
         # Phase 2: Generate report
         logger.info(f"Job {job_id}: Writing report...")
+        if progress_callback:
+            await progress_callback(65, "Fase 2: A gerar relatório...")
         report = await researcher.write_report()
 
         # Phase 3: Post-process to strip hallucinated references
+        if progress_callback:
+            await progress_callback(92, "Fase 3: A processar e finalizar relatório...")
         report = _strip_references(report)
 
         # Collect metadata
@@ -591,8 +585,7 @@ async def run_research(request: ResearchRequest) -> ResearchResult:
             created_at=datetime.utcnow().isoformat(),
         )
     finally:
-        if request.use_amalia:
-            _restore_env(saved_env)
+        _restore_env(saved_env)
 
 
 async def submit_research_job(request: ResearchRequest) -> ResearchJob:
@@ -620,19 +613,28 @@ async def submit_research_job(request: ResearchRequest) -> ResearchJob:
 
     async def _run():
         job.status = "running"
-        job.progress = "Conducting research..."
+        job.progress = "A conduzir pesquisa..."
+        job.progress_pct = 5
         _save_jobs()
+
+        async def _progress_callback(pct: int, message: str) -> None:
+            """Update job progress in-place so polling clients see live updates."""
+            job.progress_pct = pct
+            job.progress = message
+            _save_jobs()
+
         try:
-            result = await run_research(request)
+            result = await run_research(request, progress_callback=_progress_callback)
             job.result = result
             job.status = result.status
             job.error = result.error
-            job.progress = "Completed" if result.status == "completed" else "Failed"
+            job.progress = "Concluído" if result.status == "completed" else "Falhou"
+            job.progress_pct = 100 if result.status == "completed" else job.progress_pct
 
         except Exception as e:
             job.status = "failed"
             job.error = str(e)
-            job.progress = f"Failed: {e}"
+            job.progress = f"Falhou: {e}"
         finally:
             _save_jobs()
 

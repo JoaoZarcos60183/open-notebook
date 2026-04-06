@@ -60,6 +60,7 @@ export interface ResearchJob {
   report_type: string;
   status: ResearchStatus;
   progress: string;
+  progress_pct: number;
   created_at: string;
   error?: string | null;
   has_result?: boolean;

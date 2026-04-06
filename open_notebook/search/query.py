@@ -28,7 +28,7 @@ def _build_type_filter(
     """Build a doc_type terms filter clause."""
     types: List[str] = []
     if source:
-        types.extend(["source_embedding", "source_insight"])
+        types.extend(["source_embedding", "source_insight", "pdf"])
     if note:
         types.append("note")
     if not types:
@@ -37,16 +37,24 @@ def _build_type_filter(
 
 
 def _normalize_hits(hits: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Convert raw OpenSearch hits to the SurrealDB result format."""
+    """Convert raw OpenSearch hits to the SurrealDB result format.
+
+    Handles both Open Notebook documents (parent_id, title) and
+    Navy PDF documents (doc_id, section_title / source).
+    """
     results = []
     for hit in hits:
         src = hit.get("_source", {})
         score = hit.get("_score", 0)
+        # Navy docs use doc_id instead of parent_id
+        parent_id = src.get("parent_id") or src.get("doc_id", "")
+        # Navy docs use section_title or source instead of title
+        title = src.get("title") or src.get("section_title") or src.get("source", "")
         results.append(
             {
                 "id": hit.get("_id", ""),
-                "parent_id": src.get("parent_id", ""),
-                "title": src.get("title", ""),
+                "parent_id": parent_id,
+                "title": title,
                 "similarity": score,
                 "relevance": score,
                 "matches": [src.get("content", "")],
@@ -100,7 +108,7 @@ async def opensearch_text_search(
                         {
                             "multi_match": {
                                 "query": keyword,
-                                "fields": ["title^2", "content"],
+                                "fields": ["title^2", "section_title^2", "source", "content"],
                                 "type": "best_fields",
                                 "fuzziness": "AUTO",
                             }
@@ -115,6 +123,10 @@ async def opensearch_text_search(
                 "title",
                 "content",
                 "insight_type",
+                # Navy PDF document fields
+                "doc_id",
+                "section_title",
+                "source",
             ],
         }
 
@@ -176,6 +188,10 @@ async def opensearch_vector_search(
                 "title",
                 "content",
                 "insight_type",
+                # Navy PDF document fields
+                "doc_id",
+                "section_title",
+                "source",
             ],
         }
 
