@@ -216,6 +216,7 @@ export const enUS = {
     theme: "Theme",
     ask: "Ask",
     research: "Research",
+    chat: "Chat",
   },
   notebooks: {
     title: "Notebooks",
@@ -417,9 +418,9 @@ export const enUS = {
     maxFilesAllowed: "Maximum {count} files allowed per batch",
   },
   navyDocs: {
-    title: "Knowledge Base",
+    title: "Vector Database",
     loading: "Loading documents...",
-    empty: "No knowledge base documents available.",
+    empty: "No vector database documents available.",
     selectAll: "Select All",
     deselectAll: "Deselect All",
     filter: "Filter documents...",
@@ -449,6 +450,7 @@ export const enUS = {
     sessionCreated: "Chat session created",
     sessionUpdated: "Session updated",
     sessionDeleted: "Session deleted",
+    globalChatDescription: "Chat with all your indexed documents",
   },
   searchPage: {
     askAndSearch: "Ask and Search",

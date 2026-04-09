@@ -104,7 +104,7 @@ export function SessionManager({
   return (
     <>
       <Card className="h-full flex flex-col">
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 pr-12">
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5" />
@@ -114,8 +114,10 @@ export function SessionManager({
               size="sm"
               variant="outline"
               onClick={() => setIsCreating(true)}
+              className="ml-4"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4 mr-1" />
+              <span className="text-xs">{t.common.create}</span>
             </Button>
           </CardTitle>
         </CardHeader>
@@ -200,14 +202,14 @@ export function SessionManager({
                     ) : (
                       <>
                         <div className="flex items-start justify-between mb-1">
-                          <h4 className="font-medium text-sm">
+                          <h4 className="font-medium text-sm flex-1 mr-2">
                             {session.title}
                           </h4>
-                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-6 w-6 p-0"
+                              className="h-7 w-7 p-0"
                               onClick={() => handleStartEdit(session)}
                             >
                               <Edit2 className="h-3 w-3" />
@@ -215,7 +217,7 @@ export function SessionManager({
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-6 w-6 p-0"
+                              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
                               onClick={() => setDeleteConfirmId(session.id)}
                             >
                               <Trash2 className="h-3 w-3" />

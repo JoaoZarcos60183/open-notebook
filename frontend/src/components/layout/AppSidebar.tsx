@@ -45,6 +45,7 @@ import {
   LayoutDashboard,
   Shield,
   FlaskConical,
+  MessageCircle,
 } from "lucide-react";
 
 const getNavigation = (t: TranslationKeys, isAdmin: boolean) => {
@@ -58,6 +59,7 @@ const getNavigation = (t: TranslationKeys, isAdmin: boolean) => {
       items: [
         { name: t.navigation.notebooks, href: "/notebooks", icon: Book },
         { name: t.navigation.askAndSearch, href: "/search", icon: Search },
+        { name: t.navigation.chat ?? "Chat", href: "/chat", icon: MessageCircle },
       ],
     },
     {
@@ -156,6 +158,7 @@ export function AppSidebar() {
                 alt="NNBook"
                 width={32}
                 height={32}
+                style={{ width: 'auto', height: 'auto' }}
                 className="transition-opacity group-hover:opacity-0"
               />
               <Button
@@ -175,6 +178,7 @@ export function AppSidebar() {
                   alt={t.common.appName}
                   width={32}
                   height={32}
+                  style={{ width: 'auto', height: 'auto' }}
                 />
                 <span className="text-base font-medium text-sidebar-foreground">
                   {t.common.appName}

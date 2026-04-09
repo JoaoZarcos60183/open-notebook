@@ -37,6 +37,7 @@ from api.routers import (
     embedding,
     embedding_rebuild,
     episode_profiles,
+    global_chat,
     health,
     insights,
     languages,
@@ -355,6 +356,7 @@ app.include_router(
     opensearch.router, prefix="/api/opensearch", tags=["opensearch"]
 )
 app.include_router(navy_docs.router, prefix="/api", tags=["navy-docs"])
+app.include_router(global_chat.router, prefix="/api", tags=["global-chat"])
 
 
 @app.get("/")

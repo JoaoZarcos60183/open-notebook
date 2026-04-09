@@ -150,10 +150,6 @@ export function NavyDocsSection({
                       <div className="text-sm font-medium truncate" title={doc.doc_id}>
                         {label}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {doc.chunk_count} {t.navyDocs?.chunks ?? 'chunks'}
-                        {doc.source && ` · ${doc.source}`}
-                      </div>
                     </div>
                   </div>
                 )

@@ -18,6 +18,7 @@ import {
 import { AlertCircle, Loader2, Github, Mail } from "lucide-react";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { useTranslation } from "@/lib/hooks/use-translation";
+import Image from "next/image";
 
 export function LoginForm() {
   const { t, language } = useTranslation();
@@ -176,11 +177,18 @@ export function LoginForm() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle>Open Notebook</CardTitle>
-          <CardDescription>
-            Privacy-focused research and knowledge management
-          </CardDescription>
+        <CardHeader className="text-center space-y-3">
+          <div className="flex justify-center">
+            <Image
+              src="/hero.png"
+              alt="NNBook"
+              width={192}
+              height={192}
+              style={{ width: 'auto', height: 'auto' }}
+              priority
+            />
+          </div>
+          <CardTitle className="text-2xl">NNBook</CardTitle>
         </CardHeader>
 
         <CardContent className="space-y-6">

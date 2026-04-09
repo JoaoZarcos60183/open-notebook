@@ -243,3 +243,40 @@ export interface BuildContextResponse {
   token_count: number
   char_count: number
 }
+
+// Global Chat Types
+export interface GlobalChatSession extends BaseChatSession {}
+
+export interface GlobalChatSessionWithMessages extends GlobalChatSession {
+  messages: NotebookChatMessage[]
+}
+
+export interface CreateGlobalChatSessionRequest {
+  title?: string
+  model_override?: string
+}
+
+export interface UpdateGlobalChatSessionRequest {
+  title?: string
+  model_override?: string | null
+}
+
+export interface SendGlobalChatMessageRequest {
+  session_id: string
+  message: string
+  model_override?: string
+}
+
+export interface GlobalChatDocument {
+  name: string
+  type: 'source' | 'navy'
+  pages: number[]
+  chunks: number
+}
+
+export interface GlobalChatContextStats {
+  sources_count: number
+  notes_count: number
+  navy_corpus_count: number
+  documents?: GlobalChatDocument[]
+}

@@ -287,9 +287,6 @@ export default function SourcesPage() {
       <div className="flex flex-col h-full w-full max-w-none px-6 py-6">
         <div className="mb-6 flex-shrink-0">
           <h1 className="text-3xl font-bold">{t.sources.allSources}</h1>
-          <p className="mt-2 text-muted-foreground">
-            {t.sources.allSourcesDesc}
-          </p>
         </div>
 
         {sources.length > 0 && (
