@@ -288,7 +288,7 @@ export function LoginForm() {
           {loginMode === "local" && (
             <form onSubmit={handleLocalLogin} className="space-y-4">
               <div>
-                <label className="text-sm font-medium">Email (optional)</label>
+                <label className="text-sm font-medium">Email</label>
                 <Input
                   type="email"
                   placeholder="admin@example.com"
