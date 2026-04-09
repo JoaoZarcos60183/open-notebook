@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useEffect, useState, useCallback, useMemo, useId } from 'react'
-import { useRouter } from 'next/navigation'
-import { useCreateDialogs } from '@/lib/hooks/use-create-dialogs'
-import { useNotebooks } from '@/lib/hooks/use-notebooks'
-import { useTheme } from '@/lib/stores/theme-store'
+import { useEffect, useState, useCallback, useMemo, useId } from "react";
+import { useRouter } from "next/navigation";
+import { useCreateDialogs } from "@/lib/hooks/use-create-dialogs";
+import { useNotebooks } from "@/lib/hooks/use-notebooks";
+import { useTheme } from "@/components/providers/ThemeProvider";
 import {
   CommandDialog,
   CommandInput,
@@ -12,7 +12,7 @@ import {
   CommandGroup,
   CommandItem,
   CommandSeparator,
-} from '@/components/ui/command'
+} from "@/components/ui/command";
 import {
   Book,
   Search,
@@ -29,138 +29,216 @@ import {
   Monitor,
   Loader2,
   FlaskConical,
-} from 'lucide-react'
-import { useTranslation } from '@/lib/hooks/use-translation'
-import { TranslationKeys } from '@/lib/locales'
+} from "lucide-react";
+import { useTranslation } from "@/lib/hooks/use-translation";
+import { TranslationKeys } from "@/lib/locales";
 
 const getNavigationItems = (t: TranslationKeys) => [
-  { name: t.navigation.sources, href: '/sources', icon: FileText, keywords: ['files', 'documents', 'upload'] },
-  { name: t.navigation.notebooks, href: '/notebooks', icon: Book, keywords: ['notes', 'research', 'projects'] },
-  { name: t.navigation.askAndSearch, href: '/search', icon: Search, keywords: ['find', 'query'] },
-  { name: t.navigation.podcasts, href: '/podcasts', icon: Mic, keywords: ['audio', 'episodes', 'generate'] },
-  { name: t.navigation.research ?? 'Research', href: '/research', icon: FlaskConical, keywords: ['research', 'report', 'amalia', 'nova', 'analysis'] },
-  { name: t.navigation.models, href: '/settings/api-keys', icon: Bot, keywords: ['ai', 'llm', 'providers', 'openai', 'anthropic'] },
-  { name: t.navigation.transformations, href: '/transformations', icon: Shuffle, keywords: ['prompts', 'templates', 'actions'] },
-  { name: t.navigation.settings, href: '/settings', icon: Settings, keywords: ['preferences', 'config', 'options'] },
-  { name: t.navigation.advanced, href: '/advanced', icon: Wrench, keywords: ['debug', 'system', 'tools'] },
-]
+  {
+    name: t.navigation.sources,
+    href: "/sources",
+    icon: FileText,
+    keywords: ["files", "documents", "upload"],
+  },
+  {
+    name: t.navigation.notebooks,
+    href: "/notebooks",
+    icon: Book,
+    keywords: ["notes", "research", "projects"],
+  },
+  {
+    name: t.navigation.askAndSearch,
+    href: "/search",
+    icon: Search,
+    keywords: ["find", "query"],
+  },
+  {
+    name: t.navigation.podcasts,
+    href: "/podcasts",
+    icon: Mic,
+    keywords: ["audio", "episodes", "generate"],
+  },
+  {
+    name: t.navigation.research ?? "Research",
+    href: "/research",
+    icon: FlaskConical,
+    keywords: ["research", "report", "amalia", "nova", "analysis"],
+  },
+  {
+    name: t.navigation.models,
+    href: "/settings/api-keys",
+    icon: Bot,
+    keywords: ["ai", "llm", "providers", "openai", "anthropic"],
+  },
+  {
+    name: t.navigation.transformations,
+    href: "/transformations",
+    icon: Shuffle,
+    keywords: ["prompts", "templates", "actions"],
+  },
+  {
+    name: t.navigation.settings,
+    href: "/settings",
+    icon: Settings,
+    keywords: ["preferences", "config", "options"],
+  },
+  {
+    name: t.navigation.advanced,
+    href: "/advanced",
+    icon: Wrench,
+    keywords: ["debug", "system", "tools"],
+  },
+];
 
 const getCreateItems = (t: TranslationKeys) => [
-  { name: t.common.newSource, action: 'source', icon: FileText },
-  { name: t.common.newNotebook, action: 'notebook', icon: Book },
-  { name: t.common.newPodcast, action: 'podcast', icon: Mic },
-]
+  { name: t.common.newSource, action: "source", icon: FileText },
+  { name: t.common.newNotebook, action: "notebook", icon: Book },
+  { name: t.common.newPodcast, action: "podcast", icon: Mic },
+];
 
 const getThemeItems = (t: TranslationKeys) => [
-  { name: t.common.light, value: 'light' as const, icon: Sun, keywords: ['bright', 'day'] },
-  { name: t.common.dark, value: 'dark' as const, icon: Moon, keywords: ['night'] },
-  { name: t.common.system, value: 'system' as const, icon: Monitor, keywords: ['auto', 'default'] },
-]
+  {
+    name: t.common.light,
+    value: "light" as const,
+    icon: Sun,
+    keywords: ["bright", "day"],
+  },
+  {
+    name: t.common.dark,
+    value: "dark" as const,
+    icon: Moon,
+    keywords: ["night"],
+  },
+  {
+    name: t.common.system,
+    value: "system" as const,
+    icon: Monitor,
+    keywords: ["auto", "default"],
+  },
+];
 
 export function CommandPalette() {
-  const { t } = useTranslation()
-  const commandInputId = useId()
-  const navigationItems = useMemo(() => getNavigationItems(t), [t])
-  const createItems = useMemo(() => getCreateItems(t), [t])
-  const themeItems = useMemo(() => getThemeItems(t), [t])
-  
-  const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState('')
-  const router = useRouter()
-  const { openSourceDialog, openNotebookDialog, openPodcastDialog } = useCreateDialogs()
-  const { setTheme } = useTheme()
-  const { data: notebooks, isLoading: notebooksLoading } = useNotebooks(false)
+  const { t } = useTranslation();
+  const commandInputId = useId();
+  const navigationItems = useMemo(() => getNavigationItems(t), [t]);
+  const createItems = useMemo(() => getCreateItems(t), [t]);
+  const themeItems = useMemo(() => getThemeItems(t), [t]);
+
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const router = useRouter();
+  const { openSourceDialog, openNotebookDialog, openPodcastDialog } =
+    useCreateDialogs();
+  const { setTheme } = useTheme();
+  const { data: notebooks, isLoading: notebooksLoading } = useNotebooks(false);
 
   // Global keyboard listener for ⌘K / Ctrl+K
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       // Skip if focus is inside editable elements
-      const target = e.target as HTMLElement | null
+      const target = e.target as HTMLElement | null;
       if (
         target &&
         (target.isContentEditable ||
-          ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+          ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
       ) {
-        return
+        return;
       }
 
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        e.stopPropagation()
-        setOpen((open) => !open)
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen((open) => !open);
       }
-    }
+    };
 
     // Use capture phase to intercept before other handlers
-    document.addEventListener('keydown', down, true)
-    return () => document.removeEventListener('keydown', down, true)
-  }, [])
+    document.addEventListener("keydown", down, true);
+    return () => document.removeEventListener("keydown", down, true);
+  }, []);
 
   // Reset query when dialog closes
   useEffect(() => {
     if (!open) {
-      setQuery('')
+      setQuery("");
     }
-  }, [open])
+  }, [open]);
 
   const handleSelect = useCallback((callback: () => void) => {
-    setOpen(false)
-    setQuery('')
+    setOpen(false);
+    setQuery("");
     // Use setTimeout to ensure dialog closes before action
-    setTimeout(callback, 0)
-  }, [])
+    setTimeout(callback, 0);
+  }, []);
 
-  const handleNavigate = useCallback((href: string) => {
-    handleSelect(() => router.push(href))
-  }, [handleSelect, router])
+  const handleNavigate = useCallback(
+    (href: string) => {
+      handleSelect(() => router.push(href));
+    },
+    [handleSelect, router],
+  );
 
   const handleSearch = useCallback(() => {
-    if (!query.trim()) return
-    handleSelect(() => router.push(`/search?q=${encodeURIComponent(query)}&mode=search`))
-  }, [handleSelect, router, query])
+    if (!query.trim()) return;
+    handleSelect(() =>
+      router.push(`/search?q=${encodeURIComponent(query)}&mode=search`),
+    );
+  }, [handleSelect, router, query]);
 
   const handleAsk = useCallback(() => {
-    if (!query.trim()) return
-    handleSelect(() => router.push(`/search?q=${encodeURIComponent(query)}&mode=ask`))
-  }, [handleSelect, router, query])
+    if (!query.trim()) return;
+    handleSelect(() =>
+      router.push(`/search?q=${encodeURIComponent(query)}&mode=ask`),
+    );
+  }, [handleSelect, router, query]);
 
-  const handleCreate = useCallback((action: string) => {
-    handleSelect(() => {
-      if (action === 'source') openSourceDialog()
-      else if (action === 'notebook') openNotebookDialog()
-      else if (action === 'podcast') openPodcastDialog()
-    })
-  }, [handleSelect, openSourceDialog, openNotebookDialog, openPodcastDialog])
+  const handleCreate = useCallback(
+    (action: string) => {
+      handleSelect(() => {
+        if (action === "source") openSourceDialog();
+        else if (action === "notebook") openNotebookDialog();
+        else if (action === "podcast") openPodcastDialog();
+      });
+    },
+    [handleSelect, openSourceDialog, openNotebookDialog, openPodcastDialog],
+  );
 
-  const handleTheme = useCallback((theme: 'light' | 'dark' | 'system') => {
-    handleSelect(() => setTheme(theme))
-  }, [handleSelect, setTheme])
+  const handleTheme = useCallback(
+    (theme: "light" | "dark" | "system") => {
+      handleSelect(() => setTheme(theme));
+    },
+    [handleSelect, setTheme],
+  );
 
   // Check if query matches any command (navigation, create, theme, or notebook)
-  const queryLower = query.toLowerCase().trim()
+  const queryLower = query.toLowerCase().trim();
   const hasCommandMatch = useMemo(() => {
-    if (!queryLower) return false
+    if (!queryLower) return false;
     return (
-      navigationItems.some(item =>
-        item.name.toLowerCase().includes(queryLower) ||
-        item.keywords.some(k => k.includes(queryLower))
+      navigationItems.some(
+        (item) =>
+          item.name.toLowerCase().includes(queryLower) ||
+          item.keywords.some((k) => k.includes(queryLower)),
       ) ||
-      createItems.some(item =>
-        item.name.toLowerCase().includes(queryLower)
+      createItems.some((item) =>
+        item.name.toLowerCase().includes(queryLower),
       ) ||
-      themeItems.some(item =>
-        item.name.toLowerCase().includes(queryLower) ||
-        item.keywords.some(k => k.includes(queryLower))
+      themeItems.some(
+        (item) =>
+          item.name.toLowerCase().includes(queryLower) ||
+          item.keywords.some((k) => k.includes(queryLower)),
       ) ||
-      (notebooks?.some(nb =>
-        nb.name.toLowerCase().includes(queryLower) ||
-        (nb.description && nb.description.toLowerCase().includes(queryLower))
-      ) ?? false)
-    )
-  }, [queryLower, notebooks, navigationItems, createItems, themeItems])
+      (notebooks?.some(
+        (nb) =>
+          nb.name.toLowerCase().includes(queryLower) ||
+          (nb.description && nb.description.toLowerCase().includes(queryLower)),
+      ) ??
+        false)
+    );
+  }, [queryLower, notebooks, navigationItems, createItems, themeItems]);
 
   // Determine if we should show the Search/Ask section at the top
-  const showSearchFirst = query.trim() && !hasCommandMatch
+  const showSearchFirst = query.trim() && !hasCommandMatch;
 
   return (
     <CommandDialog
@@ -189,7 +267,9 @@ export function CommandPalette() {
               forceMount
             >
               <Search className="h-4 w-4" />
-              <span>{t.searchPage.searchResultsFor.replace('{query}', query)}</span>
+              <span>
+                {t.searchPage.searchResultsFor.replace("{query}", query)}
+              </span>
             </CommandItem>
             <CommandItem
               value={`__ask__ ${query}`}
@@ -197,7 +277,7 @@ export function CommandPalette() {
               forceMount
             >
               <MessageCircleQuestion className="h-4 w-4" />
-              <span>{t.searchPage.askAbout.replace('{query}', query)}</span>
+              <span>{t.searchPage.askAbout.replace("{query}", query)}</span>
             </CommandItem>
           </CommandGroup>
         )}
@@ -207,7 +287,7 @@ export function CommandPalette() {
           {navigationItems.map((item) => (
             <CommandItem
               key={item.href}
-              value={`${item.name} ${item.keywords.join(' ')}`}
+              value={`${item.name} ${item.keywords.join(" ")}`}
               onSelect={() => handleNavigate(item.href)}
             >
               <item.icon className="h-4 w-4" />
@@ -227,7 +307,7 @@ export function CommandPalette() {
             notebooks.map((notebook) => (
               <CommandItem
                 key={notebook.id}
-                value={`notebook ${notebook.name} ${notebook.description || ''}`}
+                value={`notebook ${notebook.name} ${notebook.description || ""}`}
                 onSelect={() => handleNavigate(`/notebooks/${notebook.id}`)}
               >
                 <Book className="h-4 w-4" />
@@ -256,7 +336,7 @@ export function CommandPalette() {
           {themeItems.map((item) => (
             <CommandItem
               key={item.value}
-              value={`theme ${item.name} ${item.keywords.join(' ')}`}
+              value={`theme ${item.name} ${item.keywords.join(" ")}`}
               onSelect={() => handleTheme(item.value)}
             >
               <item.icon className="h-4 w-4" />
@@ -276,7 +356,9 @@ export function CommandPalette() {
                 forceMount
               >
                 <Search className="h-4 w-4" />
-                <span>{t.searchPage.searchResultsFor.replace('{query}', query)}</span>
+                <span>
+                  {t.searchPage.searchResultsFor.replace("{query}", query)}
+                </span>
               </CommandItem>
               <CommandItem
                 value={`__ask__ ${query}`}
@@ -284,12 +366,12 @@ export function CommandPalette() {
                 forceMount
               >
                 <MessageCircleQuestion className="h-4 w-4" />
-                <span>{t.searchPage.askAbout.replace('{query}', query)}</span>
+                <span>{t.searchPage.askAbout.replace("{query}", query)}</span>
               </CommandItem>
             </CommandGroup>
           </>
         )}
       </CommandList>
     </CommandDialog>
-  )
+  );
 }

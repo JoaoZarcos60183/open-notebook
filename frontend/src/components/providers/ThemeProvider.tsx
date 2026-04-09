@@ -1,44 +1,100 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
-import { useThemeStore } from '@/lib/stores/theme-store'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from "react";
+
+export type Theme = "light" | "dark" | "system";
+
+interface ThemeContextValue {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  resolvedTheme: "light" | "dark";
+}
+
+const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+
+const STORAGE_KEY = "theme";
+
+function getSystemTheme(): "light" | "dark" {
+  if (typeof window === "undefined") return "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
+
+function applyThemeToDOM(resolved: "light" | "dark") {
+  const root = document.documentElement;
+  root.classList.remove("light", "dark");
+  root.classList.add(resolved);
+  root.setAttribute("data-theme", resolved);
+}
 
 interface ThemeProviderProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const { theme, getSystemTheme, getEffectiveTheme } = useThemeStore()
+  const [theme, setThemeState] = useState<Theme>("system");
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
 
+  const resolve = useCallback(
+    (t: Theme): "light" | "dark" => (t === "system" ? getSystemTheme() : t),
+    [],
+  );
+
+  const setTheme = useCallback(
+    (t: Theme) => {
+      setThemeState(t);
+      try {
+        localStorage.setItem(STORAGE_KEY, t);
+      } catch {}
+      const r = resolve(t);
+      setResolvedTheme(r);
+      applyThemeToDOM(r);
+    },
+    [resolve],
+  );
+
+  // Apply stored theme before first paint
+  useLayoutEffect(() => {
+    let stored: Theme = "system";
+    try {
+      stored = (localStorage.getItem(STORAGE_KEY) as Theme) || "system";
+    } catch {}
+    setThemeState(stored);
+    const r = resolve(stored);
+    setResolvedTheme(r);
+    applyThemeToDOM(r);
+  }, [resolve]);
+
+  // Listen for system theme changes
   useEffect(() => {
-    // Initialize theme on mount
-    const root = window.document.documentElement
-    const effectiveTheme = getEffectiveTheme()
-    
-    // Remove all possible theme classes first
-    root.classList.remove('light', 'dark')
-    
-    // Add the effective theme class
-    root.classList.add(effectiveTheme)
-    
-    // Set the data attribute as well for better component compatibility
-    root.setAttribute('data-theme', effectiveTheme)
+    if (theme !== "system") return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = () => {
+      const r = getSystemTheme();
+      setResolvedTheme(r);
+      applyThemeToDOM(r);
+    };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, [theme]);
 
-    // Listen for system theme changes when using system preference
-    if (theme === 'system') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-      
-      const handleChange = () => {
-        const newSystemTheme = getSystemTheme()
-        root.classList.remove('light', 'dark')
-        root.classList.add(newSystemTheme)
-        root.setAttribute('data-theme', newSystemTheme)
-      }
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
 
-      mediaQuery.addEventListener('change', handleChange)
-      return () => mediaQuery.removeEventListener('change', handleChange)
-    }
-  }, [theme, getSystemTheme, getEffectiveTheme])
-
-  return <>{children}</>
+export function useTheme() {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
+  return ctx;
 }

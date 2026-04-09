@@ -308,12 +308,14 @@ export default function SearchPage() {
                     <Button
                       onClick={handleAsk}
                       disabled={ask.isStreaming || !askQuestion.trim()}
-                      className="w-full"
+                      className="flex-1 min-w-0"
                     >
                       {ask.isStreaming ? (
                         <>
                           <LoadingSpinner size="sm" className="mr-2" />
-                          {t.searchPage.processing}
+                          <span className="truncate">
+                            {t.searchPage.processing}
+                          </span>
                         </>
                       ) : (
                         t.searchPage.ask
@@ -324,10 +326,12 @@ export default function SearchPage() {
                       <Button
                         variant="outline"
                         onClick={() => setShowSaveDialog(true)}
-                        className="w-full"
+                        className="flex-1 min-w-0"
                       >
-                        <Save className="h-4 w-4 mr-2" />
-                        {t.searchPage.saveToNotebooks}
+                        <Save className="h-4 w-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">
+                          {t.searchPage.saveToNotebooks}
+                        </span>
                       </Button>
                     )}
                   </div>

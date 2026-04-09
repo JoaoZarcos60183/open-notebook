@@ -60,6 +60,7 @@ def _build_index_mapping(dimension: int) -> Dict[str, Any]:
                     },
                 },
                 "chunk_order": {"type": "integer"},
+                "file_path": {"type": "keyword"},
             },
         },
     }
@@ -176,6 +177,7 @@ async def index_document(
     owner: Optional[str] = None,
     insight_type: Optional[str] = None,
     chunk_order: Optional[int] = None,
+    file_path: Optional[str] = None,
 ) -> bool:
     """Index a single document into OpenSearch (upsert by doc_id)."""
     if not is_opensearch_enabled():
@@ -201,6 +203,8 @@ async def index_document(
             body["insight_type"] = insight_type
         if chunk_order is not None:
             body["chunk_order"] = chunk_order
+        if file_path:
+            body["file_path"] = file_path
 
         await asyncio.to_thread(
             client.index,
@@ -304,6 +308,8 @@ async def bulk_index(documents: List[Dict[str, Any]]) -> int:
                 body["insight_type"] = doc["insight_type"]
             if doc.get("chunk_order") is not None:
                 body["chunk_order"] = doc["chunk_order"]
+            if doc.get("file_path"):
+                body["file_path"] = doc["file_path"]
             actions.append(body)
 
         # Execute in batches of 500 documents (1000 action lines)
@@ -342,6 +348,7 @@ async def sync_source_embeddings(
     source_title: Optional[str],
     chunks: List[Dict[str, Any]],
     owner: Optional[str] = None,
+    file_path: Optional[str] = None,
 ) -> int:
     """Sync source embedding chunks to OpenSearch.
 
@@ -366,6 +373,7 @@ async def sync_source_embeddings(
                 "embedding": chunk["embedding"],
                 "owner": owner,
                 "chunk_order": chunk.get("order"),
+                "file_path": file_path,
             }
             for chunk in chunks
         ]

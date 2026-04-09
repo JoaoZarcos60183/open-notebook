@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api/client";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import {
   Card,
   CardContent,
@@ -49,9 +50,9 @@ export function StatusDashboard() {
       const apiTime = Date.now() - startTime;
       const apiHealthy = !!apiResponse;
 
-      // Try to get system info (this also validates auth)
-      const authResponse = await apiClient.get("/auth/me").catch(() => null);
-      const authHealthy = !!authResponse;
+      // Check auth via the store's checkAuth (handles token refresh internally)
+      const { checkAuth } = useAuthStore.getState();
+      const authHealthy = await checkAuth();
 
       // Try database health (if available)
       const dbResponse = await apiClient.get("/health/db").catch(() => null);

@@ -50,16 +50,18 @@ def _normalize_hits(hits: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         parent_id = src.get("parent_id") or src.get("doc_id", "")
         # Navy docs use section_title or source instead of title
         title = src.get("title") or src.get("section_title") or src.get("source", "")
-        results.append(
-            {
-                "id": hit.get("_id", ""),
-                "parent_id": parent_id,
-                "title": title,
-                "similarity": score,
-                "relevance": score,
-                "matches": [src.get("content", "")],
-            }
-        )
+        item: Dict[str, Any] = {
+            "id": hit.get("_id", ""),
+            "parent_id": parent_id,
+            "title": title,
+            "similarity": score,
+            "relevance": score,
+            "matches": [src.get("content", "")],
+        }
+        file_path = src.get("file_path")
+        if file_path:
+            item["file_path"] = file_path
+        results.append(item)
     return results
 
 
@@ -127,6 +129,8 @@ async def opensearch_text_search(
                 "doc_id",
                 "section_title",
                 "source",
+                # Shared file system path
+                "file_path",
             ],
         }
 
@@ -192,6 +196,8 @@ async def opensearch_vector_search(
                 "doc_id",
                 "section_title",
                 "source",
+                # Shared file system path
+                "file_path",
             ],
         }
 

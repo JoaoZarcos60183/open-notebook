@@ -13,6 +13,60 @@ export interface UserInfo {
   avatar?: string;
 }
 
+// Proactive token refresh — fires 5 minutes before expiry
+let _refreshTimer: ReturnType<typeof setTimeout> | null = null;
+const REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
+
+async function _scheduleRefresh(expiresInSeconds: number) {
+  // Clear any existing timer
+  if (_refreshTimer) {
+    clearTimeout(_refreshTimer);
+    _refreshTimer = null;
+  }
+
+  const delayMs = Math.max(
+    expiresInSeconds * 1000 - REFRESH_BUFFER_MS,
+    30_000, // at least 30 s from now
+  );
+
+  _refreshTimer = setTimeout(async () => {
+    try {
+      const state = useAuthStore.getState();
+      if (!state.token || !state.isAuthenticated) return;
+
+      const apiUrl = await getApiUrl();
+      const response = await fetch(`${apiUrl}/api/auth/token/refresh`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${state.token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.access_token) {
+          useAuthStore.setState({
+            token: data.access_token,
+            lastAuthCheck: Date.now(),
+          });
+          // Schedule the next refresh
+          _scheduleRefresh(data.expires_in || 3600);
+        }
+      }
+    } catch {
+      // Will be caught on next checkAuth cycle
+    }
+  }, delayMs);
+}
+
+function _cancelRefresh() {
+  if (_refreshTimer) {
+    clearTimeout(_refreshTimer);
+    _refreshTimer = null;
+  }
+}
+
 interface AuthState {
   isAuthenticated: boolean;
   token: string | null;
@@ -124,6 +178,7 @@ export const useAuthStore = create<AuthState>()(
           if (response.ok) {
             const data = await response.json();
             const token = data.access_token || data.token;
+            const expiresIn = data.expires_in || 3600;
 
             // Fetch user info
             const userResponse = await fetch(`${apiUrl}/api/auth/me`, {
@@ -151,6 +206,9 @@ export const useAuthStore = create<AuthState>()(
               lastAuthCheck: Date.now(),
               error: null,
             });
+
+            // Schedule proactive refresh before token expires
+            _scheduleRefresh(expiresIn);
             return true;
           } else {
             let errorMessage = "Authentication failed";
@@ -265,6 +323,7 @@ export const useAuthStore = create<AuthState>()(
           if (response.ok) {
             const data = await response.json();
             const token = data.access_token || data.token;
+            const expiresIn = data.expires_in || 3600;
 
             // Fetch user info
             const userResponse = await fetch(`${apiUrl}/api/auth/me`, {
@@ -295,6 +354,8 @@ export const useAuthStore = create<AuthState>()(
               oauthState: undefined,
               oauthProvider: undefined,
             });
+
+            _scheduleRefresh(expiresIn);
             return true;
           } else {
             const errorData = await response.json().catch(() => ({}));
@@ -326,6 +387,9 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         const state = get();
         const oldToken = state.token;
+
+        // Cancel any pending refresh timer
+        _cancelRefresh();
 
         // Clear local state FIRST (synchronous) before async server call
         set({
@@ -457,7 +521,38 @@ export const useAuthStore = create<AuthState>()(
             });
             return true;
           } else if (response.status === 401 || response.status === 403) {
-            // Explicit rejection — token invalid or expired, log out
+            // Token expired or invalid — attempt refresh before giving up
+            try {
+              const refreshResponse = await fetch(
+                `${apiUrl}/api/auth/token/refresh`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                  },
+                },
+              );
+
+              if (refreshResponse.ok) {
+                const data = await refreshResponse.json();
+                const newToken = data.access_token;
+                if (newToken) {
+                  set({
+                    isAuthenticated: true,
+                    token: newToken,
+                    lastAuthCheck: Date.now(),
+                    isCheckingAuth: false,
+                  });
+                  _scheduleRefresh(data.expires_in || 3600);
+                  return true;
+                }
+              }
+            } catch {
+              // Refresh failed — fall through to logout
+            }
+
+            // Refresh failed — clear auth state
             set({
               isAuthenticated: false,
               token: null,
@@ -492,6 +587,11 @@ export const useAuthStore = create<AuthState>()(
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
+        // If we rehydrated with a valid token, schedule proactive refresh
+        if (state?.isAuthenticated && state?.token) {
+          // We don't know exact expiry, so schedule a checkAuth which will refresh if needed
+          _scheduleRefresh(3600); // assume ~1h, checkAuth will correct if needed
+        }
       },
     },
   ),

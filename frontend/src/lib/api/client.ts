@@ -51,6 +51,19 @@ apiClient.interceptors.request.use(async (config) => {
   return config;
 });
 
+// Token refresh lock to prevent concurrent refresh attempts
+let isRefreshing = false;
+let refreshSubscribers: ((token: string) => void)[] = [];
+
+function onTokenRefreshed(token: string) {
+  refreshSubscribers.forEach((cb) => cb(token));
+  refreshSubscribers = [];
+}
+
+function addRefreshSubscriber(cb: (token: string) => void) {
+  refreshSubscribers.push(cb);
+}
+
 // Response interceptor for error handling and token refresh
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
@@ -60,6 +73,18 @@ apiClient.interceptors.response.use(
     // Handle 401 Unauthorized - try to refresh token
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
+
+      // If already refreshing, queue this request to retry after refresh completes
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          addRefreshSubscriber((newToken: string) => {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            resolve(apiClient(originalRequest));
+          });
+        });
+      }
+
+      isRefreshing = true;
 
       try {
         // Try to refresh the token
@@ -82,10 +107,27 @@ apiClient.interceptors.response.use(
               if (refreshResponse.ok) {
                 const data = await refreshResponse.json();
                 if (data.access_token) {
-                  // Update token in storage
+                  // Update token in localStorage
                   const updated = JSON.parse(authStorage);
                   updated.state.token = data.access_token;
+                  updated.state.lastAuthCheck = Date.now();
                   localStorage.setItem("auth-storage", JSON.stringify(updated));
+
+                  // Also update Zustand store so checkAuth sees the new token
+                  try {
+                    const { useAuthStore } =
+                      await import("@/lib/stores/auth-store");
+                    useAuthStore.setState({
+                      token: data.access_token,
+                      isAuthenticated: true,
+                      lastAuthCheck: Date.now(),
+                    });
+                  } catch {
+                    // Store update is best-effort
+                  }
+
+                  isRefreshing = false;
+                  onTokenRefreshed(data.access_token);
 
                   // Retry original request with new token
                   originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
@@ -99,9 +141,23 @@ apiClient.interceptors.response.use(
         console.error("Token refresh failed:", refreshError);
       }
 
+      isRefreshing = false;
+      refreshSubscribers = [];
+
       // If refresh failed, clear auth and redirect to login
       if (typeof window !== "undefined") {
         localStorage.removeItem("auth-storage");
+        try {
+          const { useAuthStore } = await import("@/lib/stores/auth-store");
+          useAuthStore.setState({
+            isAuthenticated: false,
+            token: null,
+            user: null,
+            lastAuthCheck: null,
+          });
+        } catch {
+          // Best-effort
+        }
         window.location.href = "/login";
       }
     }
