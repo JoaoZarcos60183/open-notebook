@@ -1,6 +1,7 @@
 """
-Authentication router: OAuth2 + Local Admin Account.
-Supports Azure AD, Google, and local email-based authentication.
+Authentication router: OAuth2 + Local login with bcrypt.
+Supports Azure AD, Google, and local email/password authentication
+backed by the SurrealDB user table.
 """
 
 from datetime import datetime
@@ -12,6 +13,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
 from loguru import logger
 
+from open_notebook.domain.user import User
 from open_notebook.security.jwt_manager import JWTManager
 from open_notebook.utils.encryption import get_secret_from_env
 
@@ -62,59 +64,84 @@ async def get_auth_status():
 @router.post("/login/local")
 async def login_local(request: LoginRequest):
     """
-    Local email-based login for development and admin access.
-    
-    Default admin credentials:
-    - Email: admin@open-notebook.local
-    - Password: (from ADMIN_PASSWORD env var, default: 'admin')
-    
-    ⚠️ FOR DEVELOPMENT ONLY - Use OAuth for production
-    
-    Example:
-    ```
-    curl -X POST http://localhost:5055/auth/login/local \\
-      -H "Content-Type: application/json" \\
-      -d '{"email": "admin@open-notebook.local", "password": "admin"}'
-    ```
+    Local email/password login.
+
+    Validates the supplied email and password against the user table
+    in SurrealDB (passwords are bcrypt-hashed).
+
+    If no users exist yet, falls back to the env-var admin account
+    (ADMIN_EMAIL / ADMIN_PASSWORD) so the first admin can bootstrap
+    the system and create proper DB users.
     """
-    
+
     email = request.email
     provided_password = request.password or ""
-    
-    # Get admin credentials from environment
-    admin_email = os.getenv("ADMIN_EMAIL", "admin@open-notebook.local")
-    admin_password = os.getenv("ADMIN_PASSWORD", "admin")
-    
+
+    if not email or not provided_password:
+        raise HTTPException(status_code=401, detail="Email and password are required")
+
     try:
-        # Check if credentials match admin account
-        if email.lower() == admin_email.lower() and provided_password == admin_password:
-            # Admin login successful
+        # --- 1. Try database user lookup ---
+        user = await User.get_by_email(email)
+
+        if user and user.password_hash and user.is_active:
+            if user.verify_password(provided_password):
+                await user.update_last_login()
+
+                user_data = user.to_safe_dict()
+
+                token = JWTManager.create_token(
+                    user_id=user_data["id"],
+                    email=user_data["email"],
+                    roles=user_data["roles"],
+                )
+
+                logger.info(f"✅ DB user login successful: {email}")
+
+                return TokenResponse(
+                    access_token=token,
+                    expires_in=JWTManager.EXPIRY_SECONDS,
+                    user=user_data,
+                )
+
+        # --- 2. Env-var bootstrap fallback (first-run only) ---
+        admin_email = os.getenv("ADMIN_EMAIL", "admin@open-notebook.local")
+        admin_password = os.getenv("ADMIN_PASSWORD", "admin")
+
+        if (
+            email.lower() == admin_email.lower()
+            and provided_password == admin_password
+        ):
             user_data = {
                 "id": "admin-user-001",
                 "email": email,
                 "name": "Administrator",
                 "roles": ["admin"],
-                "provider": "local"
+                "provider": "local",
+                "is_active": True,
+                "created": None,
+                "updated": None,
+                "last_login": None,
             }
-            
-            # Generate JWT token
+
             token = JWTManager.create_token(
                 user_id=user_data["id"],
                 email=user_data["email"],
-                roles=user_data["roles"]
+                roles=user_data["roles"],
             )
-            
-            logger.info(f"✅ Local admin login successful: {email}")
-            
+
+            logger.info(f"✅ Env-var admin login (bootstrap): {email}")
+
             return TokenResponse(
                 access_token=token,
                 expires_in=JWTManager.EXPIRY_SECONDS,
-                user=user_data
+                user=user_data,
             )
-        else:
-            logger.warning(f"❌ Failed login attempt for {email}")
-            raise HTTPException(status_code=401, detail="Invalid email or password")
-            
+
+        # --- 3. No match ---
+        logger.warning(f"❌ Failed login attempt for {email}")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
     except HTTPException:
         raise
     except Exception as e:
@@ -225,13 +252,20 @@ async def get_current_user(request: Request):
         
         # Verify the token
         payload = JWTManager.verify_token(token)
-        
-        user_data = {
-            "id": payload["user_id"],
-            "email": payload["email"],
-            "roles": payload.get("roles", ["viewer"]),
-            "authenticated_via": "jwt"
-        }
+
+        # Try to fetch full user profile from DB
+        db_user = await User.get_by_email(payload["email"])
+        if db_user:
+            user_data = db_user.to_safe_dict()
+            user_data["authenticated_via"] = "jwt"
+        else:
+            user_data = {
+                "id": payload["user_id"],
+                "email": payload["email"],
+                "name": payload.get("name"),
+                "roles": payload.get("roles", ["viewer"]),
+                "authenticated_via": "jwt",
+            }
         
         logger.info(f"✅ /me endpoint: User authenticated: {payload['email']}")
         return user_data

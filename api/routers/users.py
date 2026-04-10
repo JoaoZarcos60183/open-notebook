@@ -89,6 +89,11 @@ async def create_user(request: Request):
             provider=body.get("provider", "local"),
             is_active=True,
         )
+
+        password = body.get("password")
+        if password:
+            new_user.set_password(password)
+
         await new_user.save()
 
         logger.info(f"User created: {email}")

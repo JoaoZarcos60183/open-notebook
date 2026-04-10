@@ -110,10 +110,10 @@ export function LoginForm() {
 
   const handleLocalLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.trim()) {
+    if (email.trim() && password.trim()) {
       try {
         const { login } = useAuthStore.getState();
-        await login(password);
+        await login(email, password);
       } catch (error) {
         console.error("Local login error:", error);
       }
@@ -184,7 +184,7 @@ export function LoginForm() {
               alt="NNBook"
               width={192}
               height={192}
-              style={{ width: 'auto', height: 'auto' }}
+              style={{ width: "auto", height: "auto" }}
               priority
             />
           </div>
@@ -320,7 +320,9 @@ export function LoginForm() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isPasswordLoading || !password.trim()}
+                disabled={
+                  isPasswordLoading || !email.trim() || !password.trim()
+                }
               >
                 {isPasswordLoading ? (
                   <>

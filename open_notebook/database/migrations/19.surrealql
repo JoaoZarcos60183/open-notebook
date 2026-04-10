@@ -1,0 +1,4 @@
+-- Migration 19: Add password_hash field to user table
+-- Stores bcrypt-hashed passwords for local authentication.
+
+DEFINE FIELD IF NOT EXISTS password_hash ON TABLE user TYPE option<string>;

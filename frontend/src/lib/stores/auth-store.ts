@@ -83,7 +83,7 @@ interface AuthState {
 
   setHasHydrated: (state: boolean) => void;
   checkAuthRequired: () => Promise<boolean>;
-  login: (password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   loginWithOAuth: (provider: "azure" | "google" | "github") => Promise<string>;
   handleOAuthCallback: (
     code: string,
@@ -158,7 +158,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      login: async (password: string) => {
+      login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
           const apiUrl = await getApiUrl();
@@ -170,7 +170,7 @@ export const useAuthStore = create<AuthState>()(
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              email: "admin@open-notebook.local",
+              email,
               password,
             }),
           });
@@ -180,7 +180,10 @@ export const useAuthStore = create<AuthState>()(
             const token = data.access_token || data.token;
             const expiresIn = data.expires_in || 3600;
 
-            // Fetch user info
+            // Use login response user data, enriched with /me if available
+            const loginUser = data.user;
+
+            // Fetch full user info from /me
             const userResponse = await fetch(`${apiUrl}/api/auth/me`, {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -188,18 +191,19 @@ export const useAuthStore = create<AuthState>()(
               },
             });
 
-            let user = null;
+            let user = loginUser || null;
             if (userResponse.ok) {
-              user = await userResponse.json();
+              const meData = await userResponse.json();
+              user = meData || user;
             }
 
             set({
               isAuthenticated: true,
               token,
               user: user || {
-                id: "admin",
-                email: "admin@local",
-                roles: ["admin"],
+                id: data.user?.id || "unknown",
+                email: data.user?.email || email,
+                roles: data.user?.roles || ["viewer"],
                 provider: "local",
               },
               isLoading: false,
