@@ -77,7 +77,8 @@ export const enUS = {
     built: "Built",
     apiUrl: "API URL",
     frontendUrl: "Frontend URL",
-    checkConsoleLogs: "Check browser console for detailed logs (look for 🔧 [Config] messages)",
+    checkConsoleLogs:
+      "Check browser console for detailed logs (look for 🔧 [Config] messages)",
     yes: "Yes",
     no: "No",
     saving: "Saving...",
@@ -155,7 +156,8 @@ export const enUS = {
     failedToSendMessage: "Failed to send message",
     unauthorized: "Unauthorized access, please check your password",
     invalidPassword: "Invalid password",
-    embeddingModelRequired: "This feature requires an embedding model. Please configure one in the Models section.",
+    embeddingModelRequired:
+      "This feature requires an embedding model. Please configure one in the Models section.",
     strategyModelNotFound: "Strategy model not found",
     answerModelNotFound: "Answer model not found",
     finalAnswerModelNotFound: "Final answer model not found",
@@ -195,7 +197,8 @@ export const enUS = {
     passwordPlaceholder: "Password",
     signingIn: "Signing in...",
     signIn: "Sign In",
-    connectErrorHint: "Unable to connect to server. Please check if the API is running.",
+    connectErrorHint:
+      "Unable to connect to server. Please check if the API is running.",
   },
   navigation: {
     collect: "Collect",
@@ -205,6 +208,8 @@ export const enUS = {
     sources: "Sources",
     notebooks: "Notebooks",
     askAndSearch: "Ask and Search",
+    search: "Search",
+    chat: "Chat",
     podcasts: "Podcasts",
     models: "Models",
     transformations: "Transformations",
@@ -226,12 +231,15 @@ export const enUS = {
     archive: "Archive",
     unarchive: "Unarchive",
     deleteNotebook: "Delete Notebook",
-    deleteNotebookDesc: "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+    deleteNotebookDesc:
+      'Are you sure you want to delete "{name}"? This action cannot be undone.',
     deleteNotebookLoading: "Loading deletion preview...",
     deleteNotebookNotes: "{count} note(s) will be permanently deleted.",
     deleteNotebookNoNotes: "No notes to delete.",
-    deleteNotebookExclusiveSources: "{count} source(s) exist only in this notebook.",
-    deleteNotebookSharedSources: "{count} source(s) are shared with other notebooks and will be unlinked.",
+    deleteNotebookExclusiveSources:
+      "{count} source(s) exist only in this notebook.",
+    deleteNotebookSharedSources:
+      "{count} source(s) are shared with other notebooks and will be unlinked.",
     deleteNotebookNoSources: "No sources in this notebook.",
     deleteExclusiveSourcesLabel: "Delete exclusive sources",
     keepExclusiveSourcesLabel: "Unlink and keep them",
@@ -244,7 +252,8 @@ export const enUS = {
     addDescription: "Add description...",
     noNotesYet: "No notes yet",
     deleteNote: "Delete Note",
-    deleteNoteConfirm: "Are you sure you want to delete this note? This action cannot be undone.",
+    deleteNoteConfirm:
+      "Are you sure you want to delete this note? This action cannot be undone.",
     noteCreatedSuccess: "Note created successfully",
     failedToCreateNote: "Failed to create note",
     noteUpdatedSuccess: "Note updated successfully",
@@ -275,7 +284,8 @@ export const enUS = {
     statusCompletedDesc: "Successfully processed",
     statusFailedDesc: "Processing failed",
     failedToLoad: "Failed to load sources",
-    allSourcesDesc: "View all your sources here. You can add new sources or manage existing ones.",
+    allSourcesDesc:
+      "View all your sources here. You can add new sources or manage existing ones.",
     allSources: "All Sources",
     insights: "Insights",
     yes: "Yes",
@@ -284,14 +294,17 @@ export const enUS = {
     noSourcesYet: "No sources yet",
     allSourcesDescShort: "View all your sources here.",
     cannotSaveNoteNoNotebook: "Cannot save note: notebook ID not available",
-    createFirstSource: "Add your first source to start building your knowledge base.",
+    createFirstSource:
+      "Add your first source to start building your knowledge base.",
     deleteSourceConfirm: "Are you sure you want to delete this source?",
     deleteConfirm: "Are you sure you want to delete this?",
-    deleteConfirmWithTitle: "Are you sure you want to delete \"{title}\"?",
-    deleteSuccess: "Source deleted successfully. Note: To delete the file from storage, you must enable checking the \"delete file\" option in the settings page.",
+    deleteConfirmWithTitle: 'Are you sure you want to delete "{title}"?',
+    deleteSuccess:
+      'Source deleted successfully. Note: To delete the file from storage, you must enable checking the "delete file" option in the settings page.',
     failedToDelete: "Failed to delete source",
     sourceQueued: "Source Queued",
-    sourceQueuedDesc: "Source submitted for background processing. You can monitor progress in the sources list.",
+    sourceQueuedDesc:
+      "Source submitted for background processing. You can monitor progress in the sources list.",
     sourceAddedSuccess: "Source added successfully",
     failedToAddSource: "Failed to add source",
     sourceUpdatedSuccess: "Source updated successfully",
@@ -336,11 +349,14 @@ export const enUS = {
     generateNewInsight: "Generate New Insight",
     selectTransformation: "Select a transformation...",
     noInsightsYet: "No insights yet",
-    createFirstInsight: "Create your first insight using a transformation above",
+    createFirstInsight:
+      "Create your first insight using a transformation above",
     viewInsight: "View Insight",
     deleteInsight: "Delete Insight",
-    deleteInsightConfirm: "Are you sure you want to delete this insight? This action cannot be undone.",
-    insightGenerationStarted: "Insight generation started. It will appear shortly.",
+    deleteInsightConfirm:
+      "Are you sure you want to delete this insight? This action cannot be undone.",
+    insightGenerationStarted:
+      "Insight generation started. It will appear shortly.",
     editNote: "Edit note",
     createNote: "Create note",
     addTitle: "Add a title...",
@@ -348,27 +364,33 @@ export const enUS = {
     writeNotePlaceholder: "Write your note content here...",
     saveNote: "Save Note",
     createNoteBtn: "Create Note",
-    createFirstNote: "Create your first note to capture insights and observations.",
+    createFirstNote:
+      "Create your first note to capture insights and observations.",
     urlLabel: "URL(s) *",
     fileLabel: "File(s) *",
     textContentLabel: "Text Content *",
-    enterUrlsPlaceholder: "Enter URLs, one per line\nhttps://example.com/article1\nhttps://example.com/article2",
+    enterUrlsPlaceholder:
+      "Enter URLs, one per line\nhttps://example.com/article1\nhttps://example.com/article2",
     batchUrlHint: "Paste multiple URLs (one per line) to batch import",
     invalidUrlsDetected: "Invalid URLs detected:",
     lineLabel: "Line {line}",
     fixInvalidUrls: "Please fix or remove invalid URLs to continue",
-    selectMultipleFilesHint: "Select multiple files to batch import. Supported: Documents (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Media (MP4, MP3, WAV, M4A), Images (JPG, PNG), Archives (ZIP)",
+    selectMultipleFilesHint:
+      "Select multiple files to batch import. Supported: Documents (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Media (MP4, MP3, WAV, M4A), Images (JPG, PNG), Archives (ZIP)",
     selectedFiles: "Selected files:",
     textPlaceholder: "Paste or type your content here...",
-    htmlDetected: "HTML content detected. It will be converted to Markdown after processing.",
+    htmlDetected:
+      "HTML content detected. It will be converted to Markdown after processing.",
     titlePlaceholder: "Give your source a descriptive title",
     batchTitlesAuto: "Titles will be automatically generated for each source.",
-    batchCommonSettings: "The same notebooks and transformations will be applied to all items.",
+    batchCommonSettings:
+      "The same notebooks and transformations will be applied to all items.",
     urlsCount: "{count} URL(s)",
     filesCount: "{count} file(s)",
     addSource: "Add Source",
     notEmbeddedAlert: "Content Not Embedded",
-    notEmbeddedDesc: "This content hasn't been embedded for vector search. Embedding enables advanced search capabilities and better content discovery.",
+    notEmbeddedDesc:
+      "This content hasn't been embedded for vector search. Embedding enables advanced search capabilities and better content discovery.",
     openOnYoutube: "Open on YouTube",
     urlCopied: "URL copied to clipboard",
     viewSource: "View Source",
@@ -383,10 +405,12 @@ export const enUS = {
     deleteSource: "Delete Source",
     retry: "Retry",
     addExistingTitle: "Add Existing Sources",
-    addExistingDesc: "Select existing sources from across all your notebooks to add to the current one.",
+    addExistingDesc:
+      "Select existing sources from across all your notebooks to add to the current one.",
     searchPlaceholder: "Search sources by name or URL...",
     noNotebooksFound: "No notebooks found.",
-    showingFirst100: "Showing first 100 sources. Use search to find specific ones.",
+    showingFirst100:
+      "Showing first 100 sources. Use search to find specific ones.",
     selectedCount: "{count} sources selected",
     added: "Added on {date}",
     addUrl: "Add URL",
@@ -398,23 +422,29 @@ export const enUS = {
     titleGenerated: "If left empty, a title will be generated from the content",
     batchCount: "{count} {type} will be processed",
     enableEmbedding: "Enable embedding for search",
-    embeddingDesc: "Allows this source to be found in vector searches and AI queries",
+    embeddingDesc:
+      "Allows this source to be found in vector searches and AI queries",
     embeddingAlways: "Embedding enabled automatically",
-    embeddingAlwaysDesc: "Your settings are configured to always embed content for vector search.",
+    embeddingAlwaysDesc:
+      "Your settings are configured to always embed content for vector search.",
     embeddingNever: "Embedding disabled",
-    embeddingNeverDesc: "Your settings are configured to skip embedding. Vector search won't be available for this source.",
+    embeddingNeverDesc:
+      "Your settings are configured to skip embedding. Vector search won't be available for this source.",
     changeInSettings: "You can change this in Settings",
     notFound: "Source not found",
     noContent: "No content available",
     insightsDesc: "Insights generated from model analysis",
     uploadedFile: "Uploaded file",
-    fileUnavailableDesc: "This file is currently unavailable due to storage system reasons.",
+    fileUnavailableDesc:
+      "This file is currently unavailable due to storage system reasons.",
     batchSuccess: "{count} source(s) created successfully",
     batchFailed: "Failed to create all {count} sources",
     batchPartial: "{success} succeeded, {failed} failed",
     submittingSource: "Submitting source for processing...",
-    processingBatchSources: "Processing {count} sources. This may take a few moments.",
-    processingSource: "Your source is being processed. This may take a few moments.",
+    processingBatchSources:
+      "Processing {count} sources. This may take a few moments.",
+    processingSource:
+      "Your source is being processed. This may take a few moments.",
     maxFilesAllowed: "Maximum {count} files allowed per batch",
   },
   navyDocs: {
@@ -433,7 +463,8 @@ export const enUS = {
     sessionTitlePlaceholder: "Type a title here...",
     noSessions: "No chat sessions yet",
     deleteSession: "Delete Session",
-    deleteSessionDesc: "Are you sure you want to delete this chat session? This action cannot be undone.",
+    deleteSessionDesc:
+      "Are you sure you want to delete this chat session? This action cannot be undone.",
     sendPlaceholder: "Ask anything about your sources...",
     sessionsTitle: "Chat Sessions",
     chatWith: "Chat with {name}",
@@ -445,7 +476,8 @@ export const enUS = {
     chatWithNotebook: "Chat with Notebook",
     unableToLoadChat: "Unable to load chat",
     noDescription: "No description",
-    startByCreating: "Start by creating your first notebook to organize your research.",
+    startByCreating:
+      "Start by creating your first notebook to organize your research.",
     messagesCount: "{count} messages",
     sessionCreated: "Chat session created",
     sessionUpdated: "Session updated",
@@ -457,11 +489,13 @@ export const enUS = {
     chooseAMode: "Choose a mode",
     search: "Search",
     askYourKb: "Ask Your Knowledge Base",
-    askYourKbDesc: "The LLM will answer your query based on the documents in your knowledge base.",
+    askYourKbDesc:
+      "The LLM will answer your query based on the documents in your knowledge base.",
     question: "Question",
     enterQuestionPlaceholder: "Enter your question...",
     pressToSubmit: "Press Cmd/Ctrl+Enter to submit",
-    noEmbeddingModel: "You can't use this feature because you have no embedding model selected. Please set one up in the Models page.",
+    noEmbeddingModel:
+      "You can't use this feature because you have no embedding model selected. Please set one up in the Models page.",
     usingCustomModels: "Using Custom Models",
     usingDefaultModels: "Using Default Models",
     advanced: "Advanced",
@@ -475,7 +509,8 @@ export const enUS = {
     enterSearchPlaceholder: "Enter search query...",
     pressToSearch: "Press Enter to search",
     searchType: "Search Type",
-    vectorSearchWarning: "Vector search requires an embedding model. Only text search is available.",
+    vectorSearchWarning:
+      "Vector search requires an embedding model. Only text search is available.",
     textSearch: "Text Search",
     vectorSearch: "Vector Search",
     hybridSearch: "Hybrid Search",
@@ -496,7 +531,8 @@ export const enUS = {
     orSearchKb: "Or search your knowledge base",
     saving: "Saving...",
     advancedModelTitle: "Advanced Model Selection",
-    advancedModelDesc: "Choose specific models for each stage of the Ask process",
+    advancedModelDesc:
+      "Choose specific models for each stage of the Ask process",
     strategyModel: "Strategy Model",
     answerModel: "Answer Model",
     finalAnswerModel: "Final Answer Model",
@@ -508,14 +544,17 @@ export const enUS = {
   },
   podcasts: {
     generateEpisode: "Generate Podcast Episode",
-    generateEpisodeDesc: "Select the content to include and configure the episode details before generating a new podcast episode.",
+    generateEpisodeDesc:
+      "Select the content to include and configure the episode details before generating a new podcast episode.",
     content: "Content",
-    contentDesc: "Pick notebooks, sources, and notes to include in this episode.",
+    contentDesc:
+      "Pick notebooks, sources, and notes to include in this episode.",
     itemsSelected: "{count} items selected",
     tokens: "{count} tokens",
     chars: "{count} chars",
     loadingNotebooks: "Loading notebooks...",
-    noNotebooksFoundInPodcasts: "No notebooks found. Create a notebook and add content before generating a podcast.",
+    noNotebooksFoundInPodcasts:
+      "No notebooks found. Create a notebook and add content before generating a podcast.",
     noContentSelected: "No content selected",
     summary: "Summary",
     fullContent: "Full content",
@@ -527,16 +566,19 @@ export const enUS = {
     episodeName: "Episode name",
     episodeNamePlaceholder: "e.g., AI and the Future of Work",
     additionalInstructions: "Additional instructions",
-    instructionsPlaceholder: "Any supplementary advice to append to the episode briefing...",
+    instructionsPlaceholder:
+      "Any supplementary advice to append to the episode briefing...",
     generating: "Generating...",
     generate: "Generate",
     hostPlaceholder: "Host {number}",
     profileRequired: "Episode Profile Required",
-    profileRequiredDesc: "Select an episode profile before generating a podcast.",
+    profileRequiredDesc:
+      "Select an episode profile before generating a podcast.",
     nameRequired: "Episode name required",
     nameRequiredDesc: "Provide a name for the episode.",
     addContext: "Add context",
-    addContextDesc: "Select at least one source or note to include in the episode.",
+    addContextDesc:
+      "Select at least one source or note to include in the episode.",
     generationFailed: "Podcast generation failed",
     speakerProfile: "Speaker Profile",
     usesSpeakerProfile: "Uses speaker profile",
@@ -545,17 +587,20 @@ export const enUS = {
     noSources: "No sources available in this notebook.",
     noNotes: "No notes available in this notebook.",
     selectMode: "Select mode",
-    buildContextFailed: "Failed to build context. Please review your selections.",
+    buildContextFailed:
+      "Failed to build context. Please review your selections.",
     podcastTaskStarted: "Podcast task started",
     loadingProfiles: "Loading episode profiles...",
-    noProfilesFound: "No episode profiles found. Create an episode profile before generating a podcast.",
+    noProfilesFound:
+      "No episode profiles found. Create an episode profile before generating a podcast.",
     listTitle: "Podcasts",
     listDesc: "Keep track of generated episodes and manage reusable profiles.",
     chooseAView: "Choose a view",
     episodesTab: "Episodes",
     templatesTab: "Profiles",
     overviewTitle: "Episodes overview",
-    overviewDesc: "Monitor podcast generation jobs and review the final artefacts.",
+    overviewDesc:
+      "Monitor podcast generation jobs and review the final artefacts.",
     generateBtn: "Generate Podcast",
     total: "Total",
     processingLabel: "Processing",
@@ -563,9 +608,11 @@ export const enUS = {
     failedLabel: "Failed",
     pendingLabel: "Pending",
     loadErrorTitle: "Failed to load episodes",
-    loadErrorDesc: "We could not fetch the latest podcast episodes. Try again shortly.",
+    loadErrorDesc:
+      "We could not fetch the latest podcast episodes. Try again shortly.",
     loadingEpisodes: "Loading episodes…",
-    noEpisodesYet: "No podcast episodes yet. Generate your first one from the notebook or source chat interfaces.",
+    noEpisodesYet:
+      "No podcast episodes yet. Generate your first one from the notebook or source chat interfaces.",
     statusRunningTitle: "Currently Processing",
     statusRunningDesc: "Episodes that are actively generating assets.",
     statusPendingTitle: "Queued / Pending",
@@ -575,29 +622,42 @@ export const enUS = {
     statusFailedTitle: "Failed Episodes",
     statusFailedDesc: "Episodes that encountered issues during generation.",
     templatesWorkspaceTitle: "Profiles workspace",
-    templatesWorkspaceDesc: "Build reusable episode and speaker configurations for fast podcast production.",
+    templatesWorkspaceDesc:
+      "Build reusable episode and speaker configurations for fast podcast production.",
     howTemplatesPowerTitle: "How profiles power podcast generation",
-    howTemplatesPowerDesc: "Profiles split the podcast workflow into two reusable building blocks. Mix and match them whenever you generate a new episode.",
+    howTemplatesPowerDesc:
+      "Profiles split the podcast workflow into two reusable building blocks. Mix and match them whenever you generate a new episode.",
     episodeProfilesSetFormat: "Episode profiles set the format",
-    episodeProfilesList1: "Outline the number of segments and how the story flows",
-    episodeProfilesList2: "Pick the language models used for briefing, outlining, and script writing",
-    episodeProfilesList3: "Store default briefings so every episode starts with a consistent tone",
+    episodeProfilesList1:
+      "Outline the number of segments and how the story flows",
+    episodeProfilesList2:
+      "Pick the language models used for briefing, outlining, and script writing",
+    episodeProfilesList3:
+      "Store default briefings so every episode starts with a consistent tone",
     speakerProfilesBringVoices: "Speaker profiles bring voices to life",
     speakerProfilesList1: "Choose the text-to-speech provider and model",
-    speakerProfilesList2: "Capture personality, backstory, and pronunciation notes per speaker",
-    speakerProfilesList3: "Reuse the same host or guest voices across different episode formats",
+    speakerProfilesList2:
+      "Capture personality, backstory, and pronunciation notes per speaker",
+    speakerProfilesList3:
+      "Reuse the same host or guest voices across different episode formats",
     recommendedWorkflow: "Recommended workflow",
     workflowStep1: "Create speaker profiles for each voice you need",
-    workflowStep2: "Build episode profiles that reference those speakers by name",
-    workflowStep3: "Generate podcasts by selecting the episode profile that fits the story",
-    workflowHint: "Episode profiles reference speaker profiles by name, so starting with speakers avoids missing voice assignments later.",
+    workflowStep2:
+      "Build episode profiles that reference those speakers by name",
+    workflowStep3:
+      "Generate podcasts by selecting the episode profile that fits the story",
+    workflowHint:
+      "Episode profiles reference speaker profiles by name, so starting with speakers avoids missing voice assignments later.",
     failedToLoadTemplates: "Failed to load profiles data",
-    failedToLoadTemplatesDesc: "Ensure the API is running and try again. Some sections may be incomplete.",
+    failedToLoadTemplatesDesc:
+      "Ensure the API is running and try again. Some sections may be incomplete.",
     loadingTemplates: "Loading profiles…",
     speakerProfilesTitle: "Speaker profiles",
-    speakerProfilesDesc: "Configure voices and personalities for generated episodes.",
+    speakerProfilesDesc:
+      "Configure voices and personalities for generated episodes.",
     createSpeaker: "Create speaker",
-    noSpeakerProfiles: "No speaker profiles yet. Create one to make episode profiles available.",
+    noSpeakerProfiles:
+      "No speaker profiles yet. Create one to make episode profiles available.",
     noDescription: "No description provided.",
     usedByCount_one: "Used by 1 episode",
     usedByCount_other: "Used by {count} episodes",
@@ -610,43 +670,52 @@ export const enUS = {
     duplicate: "Duplicate",
     deleteSpeakerProfileTitle: "Delete speaker profile?",
     deleteSpeakerProfileDesc: "Deleting “{name}” cannot be undone.",
-    deleteSpeakerDisabledHint: "Remove this speaker from episode profiles before deleting it.",
+    deleteSpeakerDisabledHint:
+      "Remove this speaker from episode profiles before deleting it.",
     deleting: "Deleting…",
     episodeProfilesTitle: "Episode profiles",
     episodeProfilesDesc: "Define reusable generation settings for your shows.",
     createProfile: "Create profile",
-    createSpeakerFirst: "Create a speaker profile before adding an episode profile.",
-    noEpisodeProfiles: "No episode profiles yet. Create one to kickstart podcast generation.",
+    createSpeakerFirst:
+      "Create a speaker profile before adding an episode profile.",
+    noEpisodeProfiles:
+      "No episode profiles yet. Create one to kickstart podcast generation.",
     speakerCreated: "Speaker Created",
-    speakerCreatedDesc: "The speaker \"{name}\" has been successfully added.",
+    speakerCreatedDesc: 'The speaker "{name}" has been successfully added.',
     failedToCreateSpeaker: "Failed to create speaker profile",
     speakerUpdated: "Speaker Updated",
-    speakerUpdatedDesc: "The speaker \"{name}\" has been successfully updated.",
+    speakerUpdatedDesc: 'The speaker "{name}" has been successfully updated.',
     failedToUpdateSpeaker: "Failed to update speaker profile",
     speakerDeleted: "Speaker Deleted",
-    speakerDeletedDesc: "The speaker \"{name}\" has been successfully removed.",
+    speakerDeletedDesc: 'The speaker "{name}" has been successfully removed.',
     failedToDeleteSpeaker: "Failed to delete speaker profile",
     speakerDuplicated: "Speaker Duplicated",
-    speakerDuplicatedDesc: "The speaker \"{name}\" has been successfully duplicated.",
+    speakerDuplicatedDesc:
+      'The speaker "{name}" has been successfully duplicated.',
     failedToDuplicateSpeaker: "Failed to duplicate speaker profile",
     generationStarted: "Generation Started",
     generationStartedDesc: "Podcast generation has been queued.",
     failedToStartGeneration: "Failed to start generation",
     tryAgainMoment: "Please try again in a moment.",
     deleteProfileTitle: "Delete profile?",
-    deleteProfileDesc: "This will remove “{name}”. Existing episodes keep their data, but new ones will no longer use this configuration.",
+    deleteProfileDesc:
+      "This will remove “{name}”. Existing episodes keep their data, but new ones will no longer use this configuration.",
     profileCreated: "Profile Created",
-    profileCreatedDesc: "The episode profile \"{name}\" has been successfully created.",
+    profileCreatedDesc:
+      'The episode profile "{name}" has been successfully created.',
     failedToCreateProfile: "Failed to create profile",
     profileUpdated: "Profile Updated",
-    profileUpdatedDesc: "The episode profile \"{name}\" has been successfully updated.",
+    profileUpdatedDesc:
+      'The episode profile "{name}" has been successfully updated.',
     failedToUpdateProfile: "Failed to update profile",
     profileDeleted: "Profile Deleted",
-    profileDeletedDesc: "The episode profile \"{name}\" has been successfully removed.",
+    profileDeletedDesc:
+      'The episode profile "{name}" has been successfully removed.',
     failedToDeleteProfile: "Failed to delete profile",
     failedToDeleteProfileDesc: "Failed to remove the episode profile.",
     profileDuplicated: "Profile Duplicated",
-    profileDuplicatedDesc: "The episode profile \"{name}\" has been successfully duplicated.",
+    profileDuplicatedDesc:
+      'The episode profile "{name}" has been successfully duplicated.',
     failedToDuplicateProfile: "Failed to duplicate profile",
     episodeDeleted: "Episode Deleted",
     episodeDeletedDesc: "The episode has been successfully deleted.",
@@ -665,7 +734,8 @@ export const enUS = {
     noOutline: "No outline available.",
     noTranscript: "No transcript available.",
     deleteEpisodeTitle: "Delete episode?",
-    deleteEpisodeDesc: "This will remove “{name}” and its audio file permanently.",
+    deleteEpisodeDesc:
+      "This will remove “{name}” and its audio file permanently.",
     audioUnavailable: "Audio unavailable",
     segment: "Segment",
     speaker: "Speaker",
@@ -677,8 +747,10 @@ export const enUS = {
     noSpeakerProfilesAvailable: "No speaker profiles available",
     editEpisodeProfile: "Edit Episode Profile",
     createEpisodeProfile: "Create Episode Profile",
-    episodeProfileFormDesc: "Define how episodes should be generated and which speaker configuration they use by default.",
-    noSpeakerProfilesDesc: "Create a speaker profile before configuring an episode profile.",
+    episodeProfileFormDesc:
+      "Define how episodes should be generated and which speaker configuration they use by default.",
+    noSpeakerProfilesDesc:
+      "Create a speaker profile before configuring an episode profile.",
     profileName: "Profile name",
     profileNamePlaceholder: "e.g., Tech discussion",
     descriptionPlaceholder: "Short summary of when to use this profile",
@@ -686,10 +758,12 @@ export const enUS = {
     selectSpeakerProfile: "Select a speaker profile",
     outlineGeneration: "Outline generation",
     transcriptGeneration: "Transcript generation",
-    defaultBriefingPlaceholder: "Outline the structure, tone, and goals for this episode format",
+    defaultBriefingPlaceholder:
+      "Outline the structure, tone, and goals for this episode format",
     editSpeakerProfile: "Edit Speaker Profile",
     createSpeakerProfile: "Create Speaker Profile",
-    speakerProfileFormDesc: "Configure text-to-speech settings and define up to four speakers.",
+    speakerProfileFormDesc:
+      "Configure text-to-speech settings and define up to four speakers.",
     speakers: "Speakers",
     speakersDesc: "Configure between one and four voices for this profile.",
     addSpeaker: "Add speaker",
@@ -741,10 +815,12 @@ export const enUS = {
     simple: "Simple",
     docling: "Docling",
     helpMeChoose: "Help me choose",
-    docHelp: "· Docling is a little slower but more accurate, specially if the documents contain tables and images. · Simple will extract any content from the document without formatting it. · Auto (recommended) will try to process through docling and default to simple.",
+    docHelp:
+      "· Docling is a little slower but more accurate, specially if the documents contain tables and images. · Simple will extract any content from the document without formatting it. · Auto (recommended) will try to process through docling and default to simple.",
     firecrawl: "Firecrawl",
     jina: "Jina",
-    urlHelp: "· Firecrawl is a paid service (with a free tier), and very powerful. · Jina is a good option as well and also has a free tier. · Simple will use basic HTTP extraction and will miss content on javascript-based websites. · Auto (recommended) will try to use firecrawl then Jina, finally fallback to simple.",
+    urlHelp:
+      "· Firecrawl is a paid service (with a free tier), and very powerful. · Jina is a good option as well and also has a free tier. · Simple will use basic HTTP extraction and will miss content on javascript-based websites. · Auto (recommended) will try to use firecrawl then Jina, finally fallback to simple.",
     embeddingAndSearch: "Embedding and Search",
     embeddingAndSearchDesc: "Configure search and embedding options",
     defaultEmbeddingOption: "Default Embedding Option",
@@ -752,12 +828,14 @@ export const enUS = {
     ask: "Ask",
     always: "Always",
     never: "Never",
-    embeddingHelp: "Embedding the content will make it easier to find by you and by your AI agents. If you are running a local embedding model (Ollama, for example), you shouldn't worry about cost and just embed everything.",
+    embeddingHelp:
+      "Embedding the content will make it easier to find by you and by your AI agents. If you are running a local embedding model (Ollama, for example), you shouldn't worry about cost and just embed everything.",
     fileManagement: "File Management",
     fileManagementDesc: "Configure file handling and storage options",
     autoDeleteFiles: "Auto Delete Files",
     autoDeletePlaceholder: "Select auto delete option",
-    filesHelp: "Once your files are uploaded and processed, they are not required anymore. Most users should allow NNBook to delete uploaded files from the upload folder automatically.",
+    filesHelp:
+      "Once your files are uploaded and processed, they are not required anymore. Most users should allow NNBook to delete uploaded files from the upload folder automatically.",
     loadFailed: "Failed to load settings",
   },
   advanced: {
@@ -774,13 +852,16 @@ export const enUS = {
     upToDate: "Up to Date",
     unknown: "Unknown",
     viewOnGithub: "View on GitHub",
-    updateCheckFailed: "Unable to check for updates. GitHub may be unreachable.",
+    updateCheckFailed:
+      "Unable to check for updates. GitHub may be unreachable.",
     rebuild: {
       mode: "Rebuild Mode",
       existing: "Existing",
       all: "All",
-      existingDesc: "Re-embed only items that already have embeddings (faster, for model switching)",
-      allDesc: "Re-embed existing items + create embeddings for items without any (slower, comprehensive)",
+      existingDesc:
+        "Re-embed only items that already have embeddings (faster, for model switching)",
+      allDesc:
+        "Re-embed existing items + create embeddings for items without any (slower, comprehensive)",
       include: "Include in Rebuild",
       selectOneError: "Please select at least one item type to rebuild",
       starting: "Starting Rebuild...",
@@ -789,17 +870,21 @@ export const enUS = {
       running: "Submitting jobs...",
       completed: "Jobs Submitted!",
       failed: "Failed",
-      leavePageHint: "You can leave this page as this will run in the background",
+      leavePageHint:
+        "You can leave this page as this will run in the background",
       startNew: "Start New Rebuild",
       itemsProcessed: "{processed}/{total} jobs submitted ({percent}%)",
       failedItems: "{count} jobs failed to submit",
       time: "Time",
       whenToRebuild: "When should I rebuild embeddings?",
-      whenToRebuildAns: "You should rebuild when switching models, upgrading versions, fixing corruption, or after bulk imports.",
+      whenToRebuildAns:
+        "You should rebuild when switching models, upgrading versions, fixing corruption, or after bulk imports.",
       howLong: "How long does rebuilding take?",
-      howLongAns: "Processing time depends on item count, model speed, and API rate limits. Local models are usually very fast.",
+      howLongAns:
+        "Processing time depends on item count, model speed, and API rate limits. Local models are usually very fast.",
       isSafe: "Is it safe to rebuild while using the app?",
-      isSafeAns: "Yes, rebuilding is safe! It doesn't delete content, only replaces embeddings, and handles errors gracefully.",
+      isSafeAns:
+        "Yes, rebuilding is safe! It doesn't delete content, only replaces embeddings, and handles errors gracefully.",
     },
   },
   transformations: {
@@ -809,7 +894,8 @@ export const enUS = {
     playground: "Playground",
     defaultPrompt: "Default Transformation Prompt",
     defaultPromptDesc: "This will be added to all your transformation prompts",
-    defaultPromptPlaceholder: "Enter your default transformation instructions...",
+    defaultPromptPlaceholder:
+      "Enter your default transformation instructions...",
     listTitle: "Custom Transformations",
     createNew: "Create New",
     inputLabel: "Input Text",
@@ -821,10 +907,12 @@ export const enUS = {
     name: "Name",
     namePlaceholder: "Unique identifier, e.g. key_topics",
     titlePlaceholder: "Displayed title, defaults to name",
-    promptPlaceholder: "Write the prompt that will power this transformation...",
+    promptPlaceholder:
+      "Write the prompt that will power this transformation...",
     descriptionPlaceholder: "Describe what this transformation does.",
     suggestDefault: "Suggest by default on new sources",
-    promptHint: "Prompts should be written with the source content in mind. You can ask the model to summarise, extract insights, or produce structured outputs such as tables.",
+    promptHint:
+      "Prompts should be written with the source content in mind. You can ask the model to summarise, extract insights, or produce structured outputs such as tables.",
     createSuccess: "Transformation created successfully",
     updateSuccess: "Transformation updated successfully",
     deleteSuccess: "Transformation deleted successfully",
@@ -834,8 +922,10 @@ export const enUS = {
     deleteConfirm: "Are you sure you want to delete this transformation?",
     model: "Model",
     systemPrompt: "System Prompt",
-    overrideModelDesc: "Override the default model for this chat session. Leave empty to use the system default.",
-    sessionUseReplacement: "This session will use {name} instead of the default model.",
+    overrideModelDesc:
+      "Override the default model for this chat session. Leave empty to use the system default.",
+    sessionUseReplacement:
+      "This session will use {name} instead of the default model.",
     systemDefault: "System Default",
   },
   models: {
@@ -849,21 +939,27 @@ export const enUS = {
     discoverModels: "Discover Models",
     noModelsFound: "No models found from this provider",
     modelType: "Model Type",
-    modelTypeHint: "Select the type for the models you want to add. If you need different types, add them in separate batches.",
+    modelTypeHint:
+      "Select the type for the models you want to add. If you need different types, add them in separate batches.",
     deleteModel: "Delete Model",
     defaultAssignments: "Default Model Assignments",
-    defaultAssignmentsDesc: "Configure which models to use for different purposes across NNBook",
-    missingRequiredModels: "Missing required models: {models}. NNBook may not function properly without these.",
+    defaultAssignmentsDesc:
+      "Configure which models to use for different purposes across NNBook",
+    missingRequiredModels:
+      "Missing required models: {models}. NNBook may not function properly without these.",
     selectModelPlaceholder: "Select a model",
     requiredModelPlaceholder: "⚠️ Required - Select a model",
     chatModelLabel: "Chat Model",
     chatModelDesc: "Used for chat conversations",
     transformationModelLabel: "Transformation Model",
-    transformationModelDesc: "Used for summaries, insights, and transformations",
+    transformationModelDesc:
+      "Used for summaries, insights, and transformations",
     toolsModelLabel: "Tools Model",
-    toolsModelDesc: "Used for function calling - OpenAI or Anthropic recommended",
+    toolsModelDesc:
+      "Used for function calling - OpenAI or Anthropic recommended",
     largeContextModelLabel: "Large Context Model",
-    largeContextModelDesc: "Used for processing large documents - Gemini recommended",
+    largeContextModelDesc:
+      "Used for processing large documents - Gemini recommended",
     embeddingModelLabel: "Embedding Model",
     embeddingModelDesc: "Used for semantic search and vector embeddings",
     ttsModelLabel: "Text-to-Speech Model",
@@ -871,39 +967,47 @@ export const enUS = {
     sttModelLabel: "Speech-to-Text Model",
     sttModelDesc: "Used for audio transcription",
     visionModelLabel: "Vision Model",
-    visionModelDesc: "Used for image and video captioning - GPT-4o, Claude, or Gemini recommended",
+    visionModelDesc:
+      "Used for image and video captioning - GPT-4o, Claude, or Gemini recommended",
     embeddingChangeTitle: "Embedding Model Change",
-    embeddingChangeConfirm: "You are about to change your embedding model from {from} to {to}.",
+    embeddingChangeConfirm:
+      "You are about to change your embedding model from {from} to {to}.",
     rebuildRequired: "Important: Rebuild Required",
-    rebuildReason: "Changing your embedding model requires rebuilding all existing embeddings to maintain consistency. Without rebuilding, your searches may return incorrect or incomplete results.",
+    rebuildReason:
+      "Changing your embedding model requires rebuilding all existing embeddings to maintain consistency. Without rebuilding, your searches may return incorrect or incomplete results.",
     whatHappensNext: "What happens next:",
     step1: "Your default embedding model will be updated",
     step2: "Existing embeddings will remain unchanged until rebuild",
     step3: "New content will use the new embedding model",
     step4: "You should rebuild embeddings as soon as possible",
-    proceedToRebuildPrompt: "Would you like to proceed to the Advanced page to start the rebuild now?",
+    proceedToRebuildPrompt:
+      "Would you like to proceed to the Advanced page to start the rebuild now?",
     changeModelOnly: "Change Model Only",
     changeAndRebuild: "Change & Go to Rebuild",
     autoAssign: "Auto-assign Defaults",
     autoAssigning: "Assigning...",
     autoAssignSuccess: "{count} default models automatically assigned",
-    autoAssignNoModels: "No models available to assign. Please sync models first.",
+    autoAssignNoModels:
+      "No models available to assign. Please sync models first.",
     autoAssignAlreadySet: "All default models are already configured",
     testModel: "Test Model",
     testModelSuccess: "Model Test Passed",
     testModelFailed: "Model Test Failed",
     searchOrAddModel: "Search or type a model name...",
-    addCustomModel: "Add \"{name}\"",
+    addCustomModel: 'Add "{name}"',
   },
   apiKeys: {
     title: "Configure your AI with your own API keys",
-    description: "Store API keys securely in the database to enable AI providers in NNBook.",
+    description:
+      "Store API keys securely in the database to enable AI providers in NNBook.",
     encryptionRequired: "Encryption key not configured",
-    encryptionRequiredDescription: "Set the OPEN_NOTEBOOK_ENCRYPTION_KEY environment variable to any secret string to enable storing API keys in the database.",
+    encryptionRequiredDescription:
+      "Set the OPEN_NOTEBOOK_ENCRYPTION_KEY environment variable to any secret string to enable storing API keys in the database.",
     configured: "Configured",
     notConfigured: "Not configured",
     migrationAvailable: "Environment Variables Detected",
-    migrationDescription: "{count} API key(s) are configured via environment variables and can be migrated to the database for easier management.",
+    migrationDescription:
+      "{count} API key(s) are configured via environment variables and can be migrated to the database for easier management.",
     migrateToDatabase: "Migrate to Database",
     migrating: "Migrating...",
     migrationSuccess: "{count} API key(s) migrated successfully",
@@ -925,10 +1029,13 @@ export const enUS = {
     editConfig: "Edit Configuration",
     deleteConfig: "Delete Configuration",
     configName: "Configuration Name",
-    configNameHint: "A descriptive name for this configuration (e.g., 'Production', 'Development')",
+    configNameHint:
+      "A descriptive name for this configuration (e.g., 'Production', 'Development')",
     baseUrl: "Base URL",
-    baseUrlOverrideHint: "Only change this if you need to override the provider's default API endpoint.",
-    deleteConfigConfirm: "Are you sure you want to delete '{name}'? This cannot be undone.",
+    baseUrlOverrideHint:
+      "Only change this if you need to override the provider's default API endpoint.",
+    deleteConfigConfirm:
+      "Are you sure you want to delete '{name}'? This cannot be undone.",
     configSaveSuccess: "Configuration saved successfully",
     configUpdateSuccess: "Configuration updated successfully",
     configDeleteSuccess: "Configuration deleted successfully",
@@ -936,12 +1043,15 @@ export const enUS = {
   },
   research: {
     title: "Research",
-    subtitle: "Generate in-depth research reports powered by NOVA-Researcher and Amália AI.",
+    subtitle:
+      "Generate in-depth research reports powered by NOVA-Researcher and Amália AI.",
     newResearch: "New Research",
     history: "History",
     queryTitle: "Research Query",
-    queryDescription: "Enter your research question or topic. Be specific for better results.",
-    queryPlaceholder: "e.g., What are the latest developments in maritime autonomous systems?",
+    queryDescription:
+      "Enter your research question or topic. Be specific for better results.",
+    queryPlaceholder:
+      "e.g., What are the latest developments in maritime autonomous systems?",
     reportType: "Report Type",
     reportSourceLabel: "Data Source",
     toneLabel: "Writing Tone",
@@ -950,18 +1060,21 @@ export const enUS = {
     amaliaDescription: "AMALIA-9B — Portuguese-optimized model by NOVASearch",
     defaultModelNote: "Will use the default GPTResearcher model (GPT-4o-mini)",
     sourceUrls: "Source URLs (Optional)",
-    sourceUrlsDescription: "Add specific URLs to include in the research. One URL per line.",
+    sourceUrlsDescription:
+      "Add specific URLs to include in the research. One URL per line.",
     generating: "Generating...",
     generate: "Generate Research",
     generationStarted: "Research Started",
-    generationStartedDesc: "Your research is being generated. Check the History tab for progress.",
+    generationStartedDesc:
+      "Your research is being generated. Check the History tab for progress.",
     failedToStart: "Failed to Start Research",
     noJobs: "No research jobs yet",
     noJobsDesc: "Generate your first research report to see it here.",
     activeJobs: "Research in progress — auto-refreshing...",
     viewReport: "View Report",
     saveToNotebook: "Save to Notebook",
-    saveToNotebookDesc: "Choose a notebook to save this research report as a note.",
+    saveToNotebookDesc:
+      "Choose a notebook to save this research report as a note.",
     selectNotebook: "Select a notebook...",
     save: "Save",
     savedAsNote: "Saved as Note",
@@ -972,7 +1085,8 @@ export const enUS = {
     copied: "Copied",
     copiedDesc: "Report copied to clipboard",
     sourcesUsed: "Sources Used",
-    notebookResearchDesc: "Run a deep research and automatically save the result as a note in this notebook.",
+    notebookResearchDesc:
+      "Run a deep research and automatically save the result as a note in this notebook.",
     researchInProgress: "Research in progress...",
     pleaseWait: "Please wait, this may take a few minutes.",
     savedAsNoteInNotebook: "Research complete — saved as note!",
@@ -982,10 +1096,12 @@ export const enUS = {
   },
   setupBanner: {
     encryptionRequired: "Encryption key not configured",
-    encryptionRequiredDescription: "Set the OPEN_NOTEBOOK_ENCRYPTION_KEY environment variable to enable secure credential storage.",
+    encryptionRequiredDescription:
+      "Set the OPEN_NOTEBOOK_ENCRYPTION_KEY environment variable to enable secure credential storage.",
     migrationAvailable: "API key migration available",
-    migrationDescription: "{count} provider(s) have API keys set via environment variables. Migrate them to the database for easier management.",
+    migrationDescription:
+      "{count} provider(s) have API keys set via environment variables. Migrate them to the database for easier management.",
     goToSettings: "Go to Settings",
     viewDocs: "View docs",
   },
-}
+};

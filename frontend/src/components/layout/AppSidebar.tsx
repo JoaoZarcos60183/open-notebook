@@ -46,6 +46,7 @@ import {
   Shield,
   FlaskConical,
   MessageCircle,
+  MessageCircleQuestion,
 } from "lucide-react";
 
 const getNavigation = (t: TranslationKeys, isAdmin: boolean) => {
@@ -57,19 +58,35 @@ const getNavigation = (t: TranslationKeys, isAdmin: boolean) => {
     {
       title: t.navigation.process,
       items: [
+        {
+          name: t.navigation.chat ?? "Chat",
+          href: "/chat",
+          icon: MessageCircle,
+        },
+        {
+          name: t.navigation.search ?? "Search",
+          href: "/search",
+          icon: Search,
+        },
         { name: t.navigation.notebooks, href: "/notebooks", icon: Book },
-        { name: t.navigation.askAndSearch, href: "/search", icon: Search },
-        { name: t.navigation.chat ?? "Chat", href: "/chat", icon: MessageCircle },
       ],
     },
     {
       title: t.navigation.create,
       items: [
-        { name: t.navigation.research ?? "Research", href: "/research", icon: FlaskConical },
+        {
+          name: t.navigation.research ?? "Research",
+          href: "/research",
+          icon: FlaskConical,
+        },
         { name: t.navigation.podcasts, href: "/podcasts", icon: Mic },
       ],
     },
-    {
+  ];
+
+  // Manage and Admin sections only visible for admins
+  if (isAdmin) {
+    baseNav.push({
       title: t.navigation.manage,
       items: [
         { name: t.navigation.models, href: "/settings/api-keys", icon: Bot },
@@ -81,11 +98,7 @@ const getNavigation = (t: TranslationKeys, isAdmin: boolean) => {
         { name: t.navigation.settings, href: "/settings", icon: Settings },
         { name: t.navigation.advanced, href: "/advanced", icon: Wrench },
       ],
-    },
-  ];
-
-  // Add admin section if user is admin
-  if (isAdmin) {
+    });
     baseNav.push({
       title: "Admin",
       items: [
@@ -94,6 +107,7 @@ const getNavigation = (t: TranslationKeys, isAdmin: boolean) => {
           href: "/admin?tab=overview",
           icon: LayoutDashboard,
         },
+        { name: "Ask", href: "/admin?tab=ask", icon: MessageCircleQuestion },
         { name: "Users & Roles", href: "/admin?tab=users", icon: Settings },
         { name: "Permissions", href: "/admin?tab=permissions", icon: Shield },
         { name: "Audit Logs", href: "/admin?tab=audit", icon: FileText },
@@ -158,7 +172,7 @@ export function AppSidebar() {
                 alt="NNBook"
                 width={32}
                 height={32}
-                style={{ width: 'auto', height: 'auto' }}
+                style={{ width: "auto", height: "auto" }}
                 className="transition-opacity group-hover:opacity-0"
               />
               <Button
@@ -178,7 +192,7 @@ export function AppSidebar() {
                   alt={t.common.appName}
                   width={32}
                   height={32}
-                  style={{ width: 'auto', height: 'auto' }}
+                  style={{ width: "auto", height: "auto" }}
                 />
                 <span className="text-base font-medium text-sidebar-foreground">
                   {t.common.appName}
@@ -295,19 +309,22 @@ export function AppSidebar() {
                   const getBasePath = (path: string) => path.split("?")[0];
                   const getQueryParams = (path: string) => {
                     const parts = path.split("?");
-                    return parts.length > 1 ? new URLSearchParams(parts[1]) : null;
+                    return parts.length > 1
+                      ? new URLSearchParams(parts[1])
+                      : null;
                   };
-                  
+
                   const itemBasePath = getBasePath(item.href);
                   const pathnameBase = getBasePath(pathname || "");
                   const itemParams = getQueryParams(item.href);
-                  
+
                   // For exact match with query parameters (e.g., admin tabs)
                   if (itemParams) {
                     const itemTab = itemParams.get("tab");
                     const currentTab = searchParams.get("tab");
-                    const isActive = itemBasePath === pathnameBase && itemTab === currentTab;
-                    
+                    const isActive =
+                      itemBasePath === pathnameBase && itemTab === currentTab;
+
                     const button = (
                       <Button
                         variant={isActive ? "secondary" : "ghost"}
@@ -327,7 +344,9 @@ export function AppSidebar() {
                       return (
                         <Tooltip key={item.name}>
                           <TooltipTrigger asChild>
-                            <Link href={item.href} scroll={false}>{button}</Link>
+                            <Link href={item.href} scroll={false}>
+                              {button}
+                            </Link>
                           </TooltipTrigger>
                           <TooltipContent side="right">
                             {item.name}
@@ -342,19 +361,22 @@ export function AppSidebar() {
                       </Link>
                     );
                   }
-                  
+
                   // Original logic for non-parameterized routes
-                  const matches = section.items.filter(
-                    (i) => {
-                      const iBasePath = getBasePath(i.href);
-                      return iBasePath === pathnameBase || pathnameBase?.startsWith(iBasePath + "/");
-                    },
-                  );
+                  const matches = section.items.filter((i) => {
+                    const iBasePath = getBasePath(i.href);
+                    return (
+                      iBasePath === pathnameBase ||
+                      pathnameBase?.startsWith(iBasePath + "/")
+                    );
+                  });
                   const bestMatch =
                     matches.length > 0
                       ? matches.sort((a, b) => b.href.length - a.href.length)[0]
                       : null;
-                  const isActive = bestMatch ? getBasePath(bestMatch.href) === itemBasePath : false;
+                  const isActive = bestMatch
+                    ? getBasePath(bestMatch.href) === itemBasePath
+                    : false;
                   const button = (
                     <Button
                       variant={isActive ? "secondary" : "ghost"}
@@ -374,7 +396,9 @@ export function AppSidebar() {
                     return (
                       <Tooltip key={item.name}>
                         <TooltipTrigger asChild>
-                          <Link href={item.href} scroll={false}>{button}</Link>
+                          <Link href={item.href} scroll={false}>
+                            {button}
+                          </Link>
                         </TooltipTrigger>
                         <TooltipContent side="right">
                           {item.name}

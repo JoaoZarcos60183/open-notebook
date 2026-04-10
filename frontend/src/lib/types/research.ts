@@ -6,6 +6,7 @@ export interface ReportTypeInfo {
   value: string;
   label: string;
   description: string;
+  speed?: "quick" | "medium" | "slow";
 }
 
 export interface ToneInfo {

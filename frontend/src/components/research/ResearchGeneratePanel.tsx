@@ -20,6 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Loader2, Search, Sparkles } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   useReportTypes,
   useResearchTones,
@@ -46,7 +47,6 @@ export function ResearchGeneratePanel({
   const [reportType, setReportType] = useState("research_report");
   const [tone, setTone] = useState("Objective");
   const [modelId, setModelId] = useState("");
-  const [sourceUrls, setSourceUrls] = useState("");
 
   // Pre-select the default chat model once loaded
   useEffect(() => {
@@ -62,17 +62,12 @@ export function ResearchGeneratePanel({
     e.preventDefault();
     if (!query.trim()) return;
 
-    const urls = sourceUrls
-      .split("\n")
-      .map((u) => u.trim())
-      .filter((u) => u.length > 0);
-
     await generateMutation.mutateAsync({
       query: query.trim(),
       report_type: reportType,
       report_source: "local",
       tone,
-      source_urls: urls,
+      source_urls: [],
       model_id: modelId || undefined,
       use_amalia: !!modelId,
       run_in_background: true,
@@ -130,18 +125,19 @@ export function ResearchGeneratePanel({
               <SelectContent>
                 {reportTypes?.map((rt) => (
                   <SelectItem key={rt.value} value={rt.value}>
-                    <div className="flex flex-col">
-                      <span>{rt.label}</span>
-                    </div>
+                    {rt.label}
+                    {rt.speed ? ` (${rt.speed})` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {reportTypes && (
-              <p className="text-xs text-muted-foreground">
-                {reportTypes.find((rt) => rt.value === reportType)?.description}
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground">
+              {reportTypes?.find((rt) => rt.value === reportType)
+                ?.description ?? ""}
+              {reportTypes?.find((rt) => rt.value === reportType)?.speed
+                ? ` - ${reportTypes.find((rt) => rt.value === reportType)!.speed}`
+                : ""}
+            </p>
           </CardContent>
         </Card>
 
@@ -194,28 +190,6 @@ export function ResearchGeneratePanel({
           </CardContent>
         </Card>
       </div>
-
-      {/* Optional Source URLs */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            {t.research?.sourceUrls ?? "Source URLs (Optional)"}
-          </CardTitle>
-          <CardDescription>
-            {t.research?.sourceUrlsDescription ??
-              "Add specific URLs to include in the research. One URL per line."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            value={sourceUrls}
-            onChange={(e) => setSourceUrls(e.target.value)}
-            placeholder="https://example.com/article-1&#10;https://example.com/article-2"
-            className="min-h-[80px] font-mono text-sm"
-            disabled={isSubmitting}
-          />
-        </CardContent>
-      </Card>
 
       {/* Submit */}
       <div className="flex justify-end">
