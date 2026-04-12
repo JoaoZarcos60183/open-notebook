@@ -48,7 +48,7 @@ import {
   MessageCircle,
   MessageCircleQuestion,
   Eye,
-  Image,
+  Image as ImageIcon,
   Video,
 } from "lucide-react";
 
@@ -91,7 +91,7 @@ const getNavigation = (t: TranslationKeys, isAdmin: boolean) => {
         {
           name: "Image Analysis",
           href: "/vision/image-analysis",
-          icon: Image,
+          icon: ImageIcon,
         },
         {
           name: "Video Tracking",
