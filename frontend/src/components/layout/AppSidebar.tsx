@@ -47,6 +47,9 @@ import {
   FlaskConical,
   MessageCircle,
   MessageCircleQuestion,
+  Eye,
+  Image,
+  Video,
 } from "lucide-react";
 
 const getNavigation = (t: TranslationKeys, isAdmin: boolean) => {
@@ -80,6 +83,21 @@ const getNavigation = (t: TranslationKeys, isAdmin: boolean) => {
           icon: FlaskConical,
         },
         { name: t.navigation.podcasts, href: "/podcasts", icon: Mic },
+      ],
+    },
+    {
+      title: "Vision",
+      items: [
+        {
+          name: "Image Analysis",
+          href: "/vision/image-analysis",
+          icon: Image,
+        },
+        {
+          name: "Video Tracking",
+          href: "/vision/video-tracking",
+          icon: Video,
+        },
       ],
     },
   ];
