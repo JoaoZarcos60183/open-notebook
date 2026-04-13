@@ -69,7 +69,7 @@ export function ResearchGeneratePanel({
       tone,
       source_urls: [],
       model_id: modelId || undefined,
-      use_amalia: !!modelId,
+      use_amalia: true, // Always fetch OpenSearch docs; backend routes LLM by model provider
       run_in_background: true,
     });
 

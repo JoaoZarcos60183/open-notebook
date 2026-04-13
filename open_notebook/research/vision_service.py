@@ -23,35 +23,35 @@ if _nova_researcher_path not in sys.path:
 _vision_output_dir = os.path.join(_nova_researcher_path, "output_images")
 
 
-def _setup_amalia_env() -> Dict[str, Optional[str]]:
-    """Apply Amália LLM env vars and return the original values for restore."""
+def _setup_qwen_env() -> Dict[str, Optional[str]]:
+    """Apply Qwen3/Ollama LLM env vars for vision and return the originals for restore.
+
+    Vision analysis ALWAYS uses Qwen3 via Ollama because it supports tool calling,
+    which is required for MCP vision tools. AMALIA does not support tool calling.
+    """
     keys = [
         "OPENAI_API_KEY", "OPENAI_BASE_URL", "SMART_LLM",
-        "FAST_LLM", "STRATEGIC_LLM", "EMBEDDING",
+        "FAST_LLM", "STRATEGIC_LLM", "EMBEDDING", "OLLAMA_BASE_URL",
     ]
     saved: Dict[str, Optional[str]] = {}
     for k in keys:
         saved[k] = os.environ.get(k)
 
-    amalia_vars = {
+    qwen_vars = {
+        "OLLAMA_BASE_URL": os.environ.get(
+            "QWEN_OLLAMA_BASE_URL", "http://10.10.255.202:11434/"
+        ),
+        "SMART_LLM": os.environ.get("QWEN_SMART_LLM", "ollama:qwen3:8b"),
+        "FAST_LLM": os.environ.get("QWEN_FAST_LLM", "ollama:qwen3:8b"),
+        "STRATEGIC_LLM": os.environ.get("QWEN_STRATEGIC_LLM", "ollama:qwen3:8b"),
         "OPENAI_API_KEY": os.environ.get("AMALIA_API_KEY", "dummy"),
-        "OPENAI_BASE_URL": os.environ.get(
-            "AMALIA_BASE_URL", "https://amalia.novasearch.org/vlm/v1"
-        ),
-        "SMART_LLM": os.environ.get(
-            "AMALIA_SMART_LLM", "openai:carminho/AMALIA-9B-50-DPO"
-        ),
-        "FAST_LLM": os.environ.get(
-            "AMALIA_FAST_LLM", "openai:carminho/AMALIA-9B-50-DPO"
-        ),
-        "STRATEGIC_LLM": os.environ.get(
-            "AMALIA_STRATEGIC_LLM", "openai:carminho/AMALIA-9B-50-DPO"
-        ),
         "EMBEDDING": os.environ.get(
             "AMALIA_EMBEDDING", "huggingface:BAAI/bge-m3"
         ),
     }
-    for k, v in amalia_vars.items():
+    # Clear AMALIA-specific OpenAI base URL so GPTResearcher uses Ollama
+    os.environ.pop("OPENAI_BASE_URL", None)
+    for k, v in qwen_vars.items():
         os.environ[k] = v
 
     return saved
@@ -93,7 +93,7 @@ async def run_vision_analysis(
     # Build a query that tells the researcher to use the vision tool on this image
     research_query = f"{query} in the image {image_path}"
 
-    saved_env = _setup_amalia_env()
+    saved_env = _setup_qwen_env()
 
     # Remember existing output images so we can detect the new one
     existing_outputs = set(glob.glob(os.path.join(_vision_output_dir, "annotated_*.png")))
