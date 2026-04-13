@@ -643,7 +643,7 @@ async def discover_amalia_models() -> List[DiscoveredModel]:
         api_key = os.environ.get("AMALIA_API_KEY", "dummy")
     if not base_url:
         base_url = os.environ.get(
-            "AMALIA_BASE_URL", "https://amalia.novasearch.org/vlm/v1"
+            "AMALIA_BASE_URL", "https://api.novasearch.org/amalia-llm/v1"
         ).rstrip("/")
 
     models = []

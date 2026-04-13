@@ -254,7 +254,7 @@ async def _provision_amalia() -> bool:
     any_set = False
 
     # Default Amália endpoint
-    DEFAULT_BASE_URL = "https://amalia.novasearch.org/vlm/v1"
+    DEFAULT_BASE_URL = "https://api.novasearch.org/amalia-llm/v1"
     DEFAULT_API_KEY = "dummy"
 
     cred = await _get_default_credential("amalia")

@@ -299,7 +299,7 @@ def create_credential_from_env(provider: str) -> Credential:
     elif provider == "amalia":
         api_key = os.environ.get("AMALIA_API_KEY", "dummy")
         base_url = os.environ.get(
-            "AMALIA_BASE_URL", "https://amalia.novasearch.org/vlm/v1"
+            "AMALIA_BASE_URL", "https://api.novasearch.org/amalia-llm/v1"
         )
         return Credential(
             name="Amália (NOVASearch)",
@@ -419,7 +419,7 @@ async def test_credential(credential_id: str) -> dict:
         if provider == "amalia":
             # Amália is an OpenAI-compatible endpoint
             base_url = config.get(
-                "base_url", "https://amalia.novasearch.org/vlm/v1"
+                "base_url", "https://api.novasearch.org/amalia-llm/v1"
             )
             api_key = config.get("api_key", "dummy")
             success, message = await _test_openai_compatible_connection(
@@ -559,7 +559,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
 
     if provider == "amalia":
         # Amália is an OpenAI-compatible endpoint
-        amalia_url = (base_url or "https://amalia.novasearch.org/vlm/v1").rstrip("/")
+        amalia_url = (base_url or "https://api.novasearch.org/amalia-llm/v1").rstrip("/")
         amalia_key = api_key or "dummy"
         known_model = "carminho/AMALIA-9B-50-DPO"
         models = []

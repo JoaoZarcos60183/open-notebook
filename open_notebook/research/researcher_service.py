@@ -197,7 +197,7 @@ def _setup_amalia_env_llm_only():
     amalia_vars = {
         "OPENAI_API_KEY": os.environ.get("AMALIA_API_KEY", "dummy"),
         "OPENAI_BASE_URL": os.environ.get(
-            "AMALIA_BASE_URL", "https://amalia.novasearch.org/vlm/v1"
+            "AMALIA_BASE_URL", "https://api.novasearch.org/amalia-llm/v1"
         ),
         "SMART_LLM": os.environ.get(
             "AMALIA_SMART_LLM", "openai:carminho/AMALIA-9B-50-DPO"
@@ -225,7 +225,7 @@ def _setup_amalia_env():
     amalia_vars = {
         "OPENAI_API_KEY": os.environ.get("AMALIA_API_KEY", "dummy"),
         "OPENAI_BASE_URL": os.environ.get(
-            "AMALIA_BASE_URL", "https://amalia.novasearch.org/vlm/v1"
+            "AMALIA_BASE_URL", "https://api.novasearch.org/amalia-llm/v1"
         ),
         "SMART_LLM": os.environ.get(
             "AMALIA_SMART_LLM", "openai:carminho/AMALIA-9B-50-DPO"

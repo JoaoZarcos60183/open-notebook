@@ -159,7 +159,7 @@ class ModelManager:
                     "base_url",
                     os.environ.get(
                         "AMALIA_BASE_URL",
-                        "https://amalia.novasearch.org/vlm/v1",
+                        "https://api.novasearch.org/amalia-llm/v1",
                     ),
                 )
             if "api_key" not in config:

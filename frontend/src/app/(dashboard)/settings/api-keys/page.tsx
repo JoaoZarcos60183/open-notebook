@@ -356,7 +356,7 @@ function CredentialFormDialog({
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
-                placeholder={isOllama ? 'http://localhost:11434' : isAmalia ? 'https://amalia.novasearch.org/vlm/v1' : 'https://api.example.com/v1'}
+                placeholder={isOllama ? 'http://localhost:11434' : isAmalia ? 'https://api.novasearch.org/amalia-llm/v1' : 'https://api.example.com/v1'}
                 disabled={isSubmitting}
               />
               <p className="text-xs text-muted-foreground">{t.apiKeys.baseUrlOverrideHint}</p>
