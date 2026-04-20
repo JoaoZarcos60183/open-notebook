@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { useTranslation } from "@/lib/hooks/use-translation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,8 +14,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Search, ChevronDown, AlertCircle } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 import { useSearch } from "@/lib/hooks/use-search";
+import { useSettings } from "@/lib/hooks/use-settings";
 import { useModelDefaults } from "@/lib/hooks/use-models";
 import { useModalManager } from "@/lib/hooks/use-modal-manager";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
@@ -28,18 +28,25 @@ export default function SearchPage() {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState(urlQuery);
-  const [searchType, setSearchType] = useState<"text" | "vector" | "hybrid">(
-    "text",
-  );
   const [searchSources, setSearchSources] = useState(true);
   const [searchNotes, setSearchNotes] = useState(true);
 
   // Hooks
   const searchMutation = useSearch();
+  const { data: settings } = useSettings();
   const { data: modelDefaults, isLoading: modelsLoading } = useModelDefaults();
   const { openModal } = useModalManager();
 
   const hasEmbeddingModel = !!modelDefaults?.default_embedding_model;
+
+  // Determine search type from admin settings, falling back to hybrid or text
+  const searchType: "text" | "vector" | "hybrid" = (() => {
+    const configured = settings?.default_search_type as "text" | "vector" | "hybrid" | undefined;
+    if (configured === "vector" || configured === "hybrid") {
+      return hasEmbeddingModel ? configured : "text";
+    }
+    return configured || (hasEmbeddingModel ? "hybrid" : "text");
+  })();
 
   const hasAutoTriggeredRef = useRef(false);
 
@@ -122,67 +129,6 @@ export default function SearchPage() {
 
           {/* Search Options */}
           <div className="space-y-4">
-            {/* Search Type */}
-            <div
-              className="space-y-2"
-              role="group"
-              aria-labelledby="search-type-label"
-            >
-              <span
-                id="search-type-label"
-                className="text-sm font-medium leading-none"
-              >
-                {t.searchPage.searchType}
-              </span>
-              {!hasEmbeddingModel && (
-                <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-500">
-                  <AlertCircle className="h-4 w-4" />
-                  <span>{t.searchPage.vectorSearchWarning}</span>
-                </div>
-              )}
-              <RadioGroup
-                name="search-type"
-                value={searchType}
-                onValueChange={(value: "text" | "vector" | "hybrid") =>
-                  setSearchType(value)
-                }
-                disabled={modelsLoading || searchMutation.isPending}
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="text" id="text" />
-                  <Label htmlFor="text" className="font-normal cursor-pointer">
-                    {t.searchPage.textSearch}
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem
-                    value="vector"
-                    id="vector"
-                    disabled={!hasEmbeddingModel || searchMutation.isPending}
-                  />
-                  <Label
-                    htmlFor="vector"
-                    className={`font-normal ${!hasEmbeddingModel ? "text-muted-foreground cursor-not-allowed" : "cursor-pointer"}`}
-                  >
-                    {t.searchPage.vectorSearch}
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem
-                    value="hybrid"
-                    id="hybrid"
-                    disabled={!hasEmbeddingModel || searchMutation.isPending}
-                  />
-                  <Label
-                    htmlFor="hybrid"
-                    className={`font-normal ${!hasEmbeddingModel ? "text-muted-foreground cursor-not-allowed" : "cursor-pointer"}`}
-                  >
-                    {t.searchPage.hybridSearch}
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-
             {/* Search Locations */}
             <div
               className="space-y-2"
@@ -272,20 +218,32 @@ export default function SearchPage() {
                         ? "insight"
                         : (type as "source" | "note" | "insight");
 
+                    const matchCount = result.matches?.length ?? 0;
+
                     return (
-                      <Card key={index}>
+                      <Card key={index} className="hover:border-primary/30 transition-colors">
                         <CardContent className="pt-4">
                           <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant="outline" className="text-xs flex-shrink-0">
+                                  {type === "source" ? "Source" : type === "note" ? "Note" : "Insight"}
+                                </Badge>
+                                <Badge variant="secondary" className="text-xs flex-shrink-0">
+                                  {result.final_score.toFixed(2)}
+                                </Badge>
+                                {matchCount > 1 && (
+                                  <Badge variant="secondary" className="text-xs flex-shrink-0">
+                                    {matchCount} chunks
+                                  </Badge>
+                                )}
+                              </div>
                               <button
                                 onClick={() => openModal(modalType, id)}
-                                className="text-primary hover:underline font-medium"
+                                className="text-primary hover:underline font-medium text-left truncate block w-full"
                               >
                                 {result.title}
                               </button>
-                              <Badge variant="secondary" className="ml-2">
-                                {result.final_score.toFixed(2)}
-                              </Badge>
                             </div>
                           </div>
 

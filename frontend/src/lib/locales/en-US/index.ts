@@ -830,6 +830,10 @@ export const enUS = {
     never: "Never",
     embeddingHelp:
       "Embedding the content will make it easier to find by you and by your AI agents. If you are running a local embedding model (Ollama, for example), you shouldn't worry about cost and just embed everything.",
+    defaultSearchType: "Default Search Type",
+    searchTypePlaceholder: "Select search type",
+    searchTypeHelp:
+      "· Hybrid (recommended) combines text matching with semantic similarity for best results. · Text Search uses keyword matching (BM25). · Vector Search uses semantic similarity with embeddings.",
     fileManagement: "File Management",
     fileManagementDesc: "Configure file handling and storage options",
     autoDeleteFiles: "Auto Delete Files",

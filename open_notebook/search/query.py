@@ -68,16 +68,27 @@ def _normalize_hits(hits: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 def _deduplicate_by_parent(
     results: List[Dict[str, Any]], limit: int
 ) -> List[Dict[str, Any]]:
-    """Group by (id, parent_id) keeping the highest score.
+    """Group by parent_id (the actual document) keeping the highest score.
 
-    Mirrors the ``GROUP BY id, parent_id, title`` in SurrealDB's
-    ``fn::vector_search``.
+    Chunks from the same document are collapsed into a single result entry,
+    with all distinct matches collected under the ``matches`` list and the
+    highest score from any chunk used as the document score.
     """
     seen: Dict[str, Dict[str, Any]] = {}
     for r in results:
-        key = f"{r['id']}_{r['parent_id']}"
-        if key not in seen or r.get("similarity", 0) > seen[key].get("similarity", 0):
-            seen[key] = r
+        key = r.get("parent_id") or r.get("id", "")
+        if key not in seen:
+            seen[key] = {**r, "matches": list(r.get("matches") or [])}
+        else:
+            existing = seen[key]
+            # Keep highest score
+            if r.get("similarity", 0) > existing.get("similarity", 0):
+                existing["similarity"] = r["similarity"]
+                existing["relevance"] = r.get("relevance", r["similarity"])
+            # Collect unique matches from this chunk
+            for m in (r.get("matches") or []):
+                if m and m not in existing["matches"]:
+                    existing["matches"].append(m)
     deduped = sorted(
         seen.values(), key=lambda x: x.get("similarity", 0), reverse=True
     )

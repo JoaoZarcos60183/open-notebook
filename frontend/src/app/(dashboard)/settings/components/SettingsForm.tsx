@@ -20,6 +20,7 @@ const settingsSchema = z.object({
   default_content_processing_engine_url: z.enum(['auto', 'firecrawl', 'jina', 'simple']).optional(),
   default_embedding_option: z.enum(['ask', 'always', 'never']).optional(),
   auto_delete_files: z.enum(['yes', 'no']).optional(),
+  default_search_type: z.enum(['text', 'vector', 'hybrid']).optional(),
 })
 
 type SettingsFormData = z.infer<typeof settingsSchema>
@@ -32,6 +33,7 @@ export function SettingsForm() {
     doc: false,
     url: false,
     embedding: false,
+    search: false,
     files: false
   })
   const [hasResetForm, setHasResetForm] = useState(false)
@@ -49,6 +51,7 @@ export function SettingsForm() {
       default_content_processing_engine_url: undefined,
       default_embedding_option: undefined,
       auto_delete_files: undefined,
+      default_search_type: undefined,
     }
   })
 
@@ -64,6 +67,7 @@ export function SettingsForm() {
         default_content_processing_engine_url: settings.default_content_processing_engine_url as 'auto' | 'firecrawl' | 'jina' | 'simple',
         default_embedding_option: settings.default_embedding_option as 'ask' | 'always' | 'never',
         auto_delete_files: settings.auto_delete_files as 'yes' | 'no',
+        default_search_type: settings.default_search_type as 'text' | 'vector' | 'hybrid',
       }
       reset(formData)
       setHasResetForm(true)
@@ -215,6 +219,41 @@ export function SettingsForm() {
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2 text-sm text-muted-foreground space-y-2">
                 <p>{t.settings.embeddingHelp}</p>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+
+          <div className="space-y-3">
+            <Label htmlFor="search_type">{t.settings.defaultSearchType ?? 'Default Search Type'}</Label>
+            <Controller
+              name="default_search_type"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+                  name={field.name}
+                  value={field.value || ''}
+                  onValueChange={field.onChange}
+                  disabled={field.disabled || isLoading}
+                >
+                  <SelectTrigger id="search_type" className="w-full">
+                    <SelectValue placeholder={t.settings.searchTypePlaceholder ?? 'Select search type'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hybrid">{t.searchPage.hybridSearch} ({t.settings.autoRecommended?.replace('Auto ', '') ?? 'Recommended'})</SelectItem>
+                    <SelectItem value="text">{t.searchPage.textSearch}</SelectItem>
+                    <SelectItem value="vector">{t.searchPage.vectorSearch}</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <Collapsible open={expandedSections.search} onOpenChange={() => toggleSection('search')}>
+              <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <ChevronDownIcon className={`h-4 w-4 transition-transform ${expandedSections.search ? 'rotate-180' : ''}`} />
+                {t.settings.helpMeChoose}
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2 text-sm text-muted-foreground space-y-2">
+                <p>{t.settings.searchTypeHelp ?? '· Hybrid (recommended) combines text matching with semantic similarity for best results. · Text Search uses keyword matching (BM25). · Vector Search uses semantic similarity with embeddings.'}</p>
               </CollapsibleContent>
             </Collapsible>
           </div>

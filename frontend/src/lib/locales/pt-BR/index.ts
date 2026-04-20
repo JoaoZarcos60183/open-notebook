@@ -836,6 +836,10 @@ export const ptBR = {
     never: "Nunca",
     embeddingHelp:
       "Incorporar o conteúdo facilitará encontrá-lo por você e seus agentes de IA. Se você está rodando um modelo de embedding local (Ollama, por exemplo), não precisa se preocupar com custo e pode incorporar tudo.",
+    defaultSearchType: "Tipo de Busca Padrão",
+    searchTypePlaceholder: "Selecionar tipo de busca",
+    searchTypeHelp:
+      "· Híbrida (recomendado) combina busca textual com similaridade semântica para melhores resultados. · Busca Textual usa correspondência por palavras-chave (BM25). · Busca Vetorial usa similaridade semântica com embeddings.",
     fileManagement: "Gerenciamento de Arquivos",
     fileManagementDesc:
       "Configure opções de manipulação e armazenamento de arquivos",

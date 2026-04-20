@@ -396,17 +396,23 @@ export function convertReferencesToCompactMarkdown(text: string, referencesLabel
     result = result.substring(0, replaceStart) + citationLink + result.substring(replaceEnd)
   }
 
-  // Step 5: Build reference list
-  const refListLines: string[] = [`\n\n${referencesLabel}:`]
+  // Step 5: Build reference list with human-readable type labels
+  const typeLabels: Record<string, string> = {
+    source: '📄 Source',
+    source_insight: '💡 Insight',
+    note: '📝 Note',
+  }
+  const refListLines: string[] = [`\n\n---\n\n**${referencesLabel}:**`]
 
   // Iterate through reference map in insertion order (Map preserves order)
   for (const [, refData] of referenceMap) {
-    const refListItem = `[${refData.number}] - [${refData.type}:${refData.id}](#ref-${refData.type}-${refData.id})`
+    const label = typeLabels[refData.type] || refData.type
+    const refListItem = `**[${refData.number}]** ${label} — [${refData.type}:${refData.id}](#ref-${refData.type}-${refData.id})`
     refListLines.push(refListItem)
   }
 
   // Step 6: Append reference list to result
-  result = result + refListLines.join('\n')
+  result = result + refListLines.join('\n\n')
 
   return result
 }
@@ -446,6 +452,12 @@ export function createCompactReferenceLinkComponent(
       const type = parts[0] as ReferenceType
       const id = parts.slice(1).join('-') // Rejoin in case ID has dashes
 
+      // Select icon based on reference type
+      const IconComponent =
+        type === 'source' ? FileText :
+        type === 'source_insight' ? Lightbulb :
+        FileEdit // note
+
       return (
         <button
           onClick={(e) => {
@@ -453,9 +465,10 @@ export function createCompactReferenceLinkComponent(
             e.stopPropagation()
             onReferenceClick(type, id)
           }}
-          className="text-primary hover:underline cursor-pointer inline font-medium"
+          className="inline-flex items-center gap-0.5 text-primary hover:underline cursor-pointer font-medium"
           type="button"
         >
+          <IconComponent className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
           {children}
         </button>
       )

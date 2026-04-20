@@ -262,6 +262,7 @@ class SettingsResponse(BaseModel):
     default_content_processing_engine_url: Optional[str] = None
     default_embedding_option: Optional[str] = None
     auto_delete_files: Optional[str] = None
+    default_search_type: Optional[str] = None
     youtube_preferred_languages: Optional[List[str]] = None
 
 
@@ -270,6 +271,7 @@ class SettingsUpdate(BaseModel):
     default_content_processing_engine_url: Optional[str] = None
     default_embedding_option: Optional[str] = None
     auto_delete_files: Optional[str] = None
+    default_search_type: Optional[str] = None
     youtube_preferred_languages: Optional[List[str]] = None
 
 

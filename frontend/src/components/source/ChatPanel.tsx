@@ -6,8 +6,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, MessageSquare, Clock } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
@@ -78,7 +78,7 @@ export function ChatPanel({
   const { t } = useTranslation()
   const chatInputId = useId()
   const [input, setInput] = useState('')
-  const [sessionManagerOpen, setSessionManagerOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<'chat' | 'sessions'>('chat')
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { openModal } = useModalManager()
@@ -123,46 +123,50 @@ export function ChatPanel({
   const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
   const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
 
+  const hasSessions = onSelectSession && onCreateSession && onDeleteSession
+
   return (
     <>
     <Card className="flex flex-col h-full flex-1 overflow-hidden">
       <CardHeader className="pb-3 flex-shrink-0">
-        <div className="flex items-center justify-between gap-2 min-w-0">
+        {hasSessions ? (
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'chat' | 'sessions')} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="chat" className="gap-1.5">
+                <MessageSquare className="h-4 w-4" />
+                <span className="truncate">{title || t.common.chat}</span>
+              </TabsTrigger>
+              <TabsTrigger value="sessions" className="gap-1.5">
+                <Clock className="h-4 w-4" />
+                {t.chat.sessions}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        ) : (
           <CardTitle className="flex items-center gap-2 truncate min-w-0">
             <Bot className="h-5 w-5 flex-shrink-0" />
             <span className="truncate">{title || (contextType === 'source' ? t.chat.chatWith.replace('{name}', t.navigation.sources) : t.chat.chatWith.replace('{name}', t.common.notebook))}</span>
           </CardTitle>
-          {onSelectSession && onCreateSession && onDeleteSession && (
-            <Dialog open={sessionManagerOpen} onOpenChange={setSessionManagerOpen}>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1 flex-shrink-0"
-                onClick={() => setSessionManagerOpen(true)}
-                disabled={loadingSessions}
-              >
-                <Clock className="h-4 w-4" />
-                <span className="hidden xl:inline text-xs">{t.chat.sessions}</span>
-              </Button>
-              <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
-                <DialogTitle className="sr-only">{t.chat.sessionsTitle}</DialogTitle>
-                <SessionManager
-                  sessions={sessions}
-                  currentSessionId={currentSessionId ?? null}
-                  onCreateSession={(title) => onCreateSession?.(title)}
-                  onSelectSession={(sessionId) => {
-                    onSelectSession(sessionId)
-                    setSessionManagerOpen(false)
-                  }}
-                  onUpdateSession={(sessionId, title) => onUpdateSession?.(sessionId, title)}
-                  onDeleteSession={(sessionId) => onDeleteSession?.(sessionId)}
-                  loadingSessions={loadingSessions}
-                />
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
+        )}
       </CardHeader>
+
+      {/* Sessions Tab Content */}
+      {hasSessions && activeTab === 'sessions' ? (
+        <CardContent className="flex-1 min-h-0 p-0 overflow-hidden">
+          <SessionManager
+            sessions={sessions}
+            currentSessionId={currentSessionId ?? null}
+            onCreateSession={(title) => onCreateSession?.(title)}
+            onSelectSession={(sessionId) => {
+              onSelectSession(sessionId)
+              setActiveTab('chat')
+            }}
+            onUpdateSession={(sessionId, title) => onUpdateSession?.(sessionId, title)}
+            onDeleteSession={(sessionId) => onDeleteSession?.(sessionId)}
+            loadingSessions={loadingSessions}
+          />
+        </CardContent>
+      ) : (
       <CardContent className="flex-1 flex flex-col min-h-0 p-0">
         <ScrollArea className="flex-1 min-h-0 px-4" ref={scrollAreaRef}>
           <div className="space-y-4 py-4">
@@ -318,6 +322,7 @@ export function ChatPanel({
           </div>
         </div>
       </CardContent>
+      )}
     </Card>
 
     </>

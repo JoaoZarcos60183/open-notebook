@@ -18,10 +18,13 @@ import {
 import { AlertCircle, Loader2, Github, Mail } from "lucide-react";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { useTranslation } from "@/lib/hooks/use-translation";
+import { useTheme } from "@/components/providers/ThemeProvider";
 import Image from "next/image";
 
 export function LoginForm() {
   const { t, language } = useTranslation();
+  const { resolvedTheme } = useTheme();
+  const heroSrc = resolvedTheme === "dark" ? "/hero_dark.png" : "/hero_light.png";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
@@ -180,7 +183,7 @@ export function LoginForm() {
         <CardHeader className="text-center space-y-3">
           <div className="flex justify-center">
             <Image
-              src="/hero.png"
+              src={heroSrc}
               alt="NNBook"
               width={192}
               height={192}

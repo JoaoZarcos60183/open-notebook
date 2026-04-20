@@ -28,6 +28,7 @@ import { LanguageToggle } from "@/components/common/LanguageToggle";
 import { UserProfileMenu } from "@/components/auth/UserProfileMenu";
 import { TranslationKeys } from "@/lib/locales";
 import { useTranslation } from "@/lib/hooks/use-translation";
+import { useTheme } from "@/components/providers/ThemeProvider";
 import { Separator } from "@/components/ui/separator";
 import {
   Book,
@@ -141,7 +142,9 @@ type CreateTarget = "source" | "notebook" | "podcast";
 export function AppSidebar() {
   const { t } = useTranslation();
   const { isAdmin } = useRBAC();
+  const { resolvedTheme } = useTheme();
   const navigation = getNavigation(t, isAdmin);
+  const logoSrc = resolvedTheme === "dark" ? "/logo_dark.png" : "/logo_light.png";
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { logout } = useAuth();
@@ -186,7 +189,7 @@ export function AppSidebar() {
           {isCollapsed ? (
             <div className="relative flex items-center justify-center w-full">
               <Image
-                src="/logo.png"
+                src={logoSrc}
                 alt="NNBook"
                 width={32}
                 height={32}
@@ -206,7 +209,7 @@ export function AppSidebar() {
             <>
               <div className="flex items-center gap-2">
                 <Image
-                  src="/logo.png"
+                  src={logoSrc}
                   alt={t.common.appName}
                   width={32}
                   height={32}
