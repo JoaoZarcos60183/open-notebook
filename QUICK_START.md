@@ -1,62 +1,87 @@
 # Quick Start Guide
 
-## Prerequisites
-
-- Python 3.11+, Node.js 18+, Docker
-
-## 1. Start SurrealDB
+## 1. Activate the Environment
 
 ```bash
-docker run -d --name surrealdb -p 8000:8000 -v surrealdb_data:/data --user root surrealdb/surrealdb:latest start -u root -p root surrealkv:///data/mydatabase.db
+conda activate marinha
 ```
 
 ## 2. Install Dependencies
 
 ```bash
-# Backend
+# Open-Notebook backend
+cd open-notebook
 pip install -e .
 
-# Frontend
+# Open-Notebook frontend
 cd frontend && npm install && cd ..
+
+# NOVA-Researcher
+cd ../NOVA-Researcher
+pip install -r requirements.txt
 ```
 
-## 3. Configure Environment
+## 3. Start All Services
 
-Create a `.env` file in the project root (see [CONFIGURATION.md](CONFIGURATION.md) for all options):
+You need **4 terminals**:
+
+**Terminal 1 — SAM3 Vision Server (GPU):**
 
 ```bash
-SURREALDB_URL=ws://localhost:8000
-ADMIN_PASSWORD=admin
+cd NOVA-Researcher
+python sam3_serve.py
+# Runs at http://localhost:4800
 ```
 
-## 4. Start the App
-
-**Terminal 1 — API:**
+**Terminal 2 — NOVA-Researcher API:**
 
 ```bash
+cd NOVA-Researcher
+python server.py
+# Runs at http://localhost:8002
+```
+
+**Terminal 3 — Open-Notebook API:**
+
+```bash
+cd open-notebook
 python run_api.py
 # Runs at http://localhost:5055
-# Migrations run automatically on startup
 ```
 
-**Terminal 2 — Frontend:**
+**Terminal 4 — Open-Notebook Frontend:**
 
 ```bash
-cd frontend
+cd open-notebook/frontend
 npm run dev
-# Runs at http://localhost:3000
 ```
 
-## 5. Open the App
+## 4. Open the App
 
-Go to `http://localhost:3000` and log in with the password set in `.env`.
+Go to `http://localhost:3000` and log in with the admin password set in `.env`.
+
+## Architecture
+
+```
+Browser (:3000)
+  └─► Open-Notebook Frontend (Next.js)
+        └─► Open-Notebook API (:5055)
+              ├─► SurrealDB (:8555)         — data storage
+              ├─► OpenSearch (novasearch)    — search backend
+              ├─► Ollama (:11434)           — embeddings & chat (Qwen3)
+              ├─► AMALIA API (novasearch)   — Portuguese Navy LLM
+              └─► NOVA-Researcher API (:8002)
+                    ├─► SAM3 Server (:4800) — image/video analysis (GPU)
+                    ├─► Ollama (:11434)     — Qwen3 for research & vision
+                    ├─► AMALIA API          — research with AMALIA
+                    └─► OpenSearch          — document retrieval
+```
 
 ## Useful Links
 
-| Resource                | URL                                  |
-| ----------------------- | ------------------------------------ |
-| App                     | http://localhost:3000                |
-| API Docs (Swagger)      | http://localhost:5055/docs           |
-| Configuration Reference | [CONFIGURATION.md](CONFIGURATION.md) |
-| Full Documentation      | [docs/](docs/index.md)               |
-| Contributing            | [CONTRIBUTING.md](CONTRIBUTING.md)   |
+| Resource           | URL                                |
+| ------------------ | ---------------------------------- |
+| App                | http://localhost:3000              |
+| API Docs (Swagger) | http://localhost:5055/docs         |
+| NOVA-Researcher    | http://localhost:8002/docs         |
+| SAM3 Server        | http://localhost:4800/docs         |
