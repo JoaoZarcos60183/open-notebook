@@ -1,31 +1,27 @@
 """
 Researcher service - wraps GPTResearcher for use within OpenNotebook.
 
-This service provides an async interface to run research using the
-NOVA-Researcher GPTResearcher agent, supporting all report types,
-tones, and sources including the Amália model.
+This service calls the NOVA-Researcher API server over HTTP instead of
+importing its modules directly.  The server URL is configured via the
+NOVA_RESEARCHER_URL environment variable (default: http://localhost:8001).
 """
 
 import json
 import os
 import re
-import sys
 import uuid
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+import httpx
 from loguru import logger
 from pydantic import BaseModel
 
 from open_notebook.config import DATA_FOLDER, NAVY_OPENSEARCH_INDEX
 
-# Add NOVA-Researcher to Python path so we can import gpt_researcher
-_nova_researcher_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "NOVA-Researcher")
-)
-if _nova_researcher_path not in sys.path:
-    sys.path.insert(0, _nova_researcher_path)
+# NOVA-Researcher API base URL
+NOVA_RESEARCHER_URL = os.environ.get("NOVA_RESEARCHER_URL", "http://localhost:8002").rstrip("/")
 
 
 # ── Enums mirroring GPTResearcher's types ──────────────────────────────
@@ -163,13 +159,9 @@ def _list_jobs() -> List[ResearchJob]:
     return sorted(_jobs.values(), key=lambda j: j.created_at, reverse=True)
 
 
-# ── Environment keys managed by NOVA-Researcher env setup ─────────────
+# ── HTTP client for NOVA-Researcher API ───────────────────────────────
 
-_RESEARCH_ENV_KEYS = [
-    "OPENAI_API_KEY", "OPENAI_BASE_URL", "SMART_LLM", "FAST_LLM",
-    "STRATEGIC_LLM", "RETRIEVER", "OPENSEARCH_INDEX", "EMBEDDING",
-    "OLLAMA_BASE_URL",
-]
+_http_client = httpx.AsyncClient(timeout=600.0)  # 10 min for long research
 
 
 # ── Model provider resolution ────────────────────────────────────────
@@ -190,280 +182,31 @@ async def _resolve_model_provider(model_id: Optional[str]) -> Optional[str]:
         return None
 
 
-# ── Amália Environment Setup ──────────────────────────────────────────
-
-def _setup_amalia_env_llm_only():
-    """Configure only the LLM-related env vars for Amália (no retriever override)."""
-    amalia_vars = {
-        "OPENAI_API_KEY": os.environ.get("AMALIA_API_KEY", "dummy"),
-        "OPENAI_BASE_URL": os.environ.get(
-            "AMALIA_BASE_URL", "https://api.novasearch.org/amalia-llm/v1"
-        ),
-        "SMART_LLM": os.environ.get(
-            "AMALIA_SMART_LLM", "openai:carminho/AMALIA-9B-50-DPO"
-        ),
-        "FAST_LLM": os.environ.get(
-            "AMALIA_FAST_LLM", "openai:carminho/AMALIA-9B-50-DPO"
-        ),
-        "STRATEGIC_LLM": os.environ.get(
-            "AMALIA_STRATEGIC_LLM", "openai:carminho/AMALIA-9B-50-DPO"
-        ),
-        "EMBEDDING": os.environ.get(
-            "AMALIA_EMBEDDING",
-            "huggingface:BAAI/bge-m3",
-        ),
-    }
-    # Clear Ollama base URL so GPTResearcher doesn't mix providers
-    os.environ.pop("OLLAMA_BASE_URL", None)
-    for key, value in amalia_vars.items():
-        os.environ[key] = value
-    logger.info("Amália LLM environment configured (retriever unchanged)")
+# ── OpenSearch Pre-fetch via NOVA-Researcher API ──────────────────────
 
 
-def _setup_amalia_env():
-    """Configure environment variables for the Amália model (LLM + retriever)."""
-    amalia_vars = {
-        "OPENAI_API_KEY": os.environ.get("AMALIA_API_KEY", "dummy"),
-        "OPENAI_BASE_URL": os.environ.get(
-            "AMALIA_BASE_URL", "https://api.novasearch.org/amalia-llm/v1"
-        ),
-        "SMART_LLM": os.environ.get(
-            "AMALIA_SMART_LLM", "openai:carminho/AMALIA-9B-50-DPO"
-        ),
-        "FAST_LLM": os.environ.get(
-            "AMALIA_FAST_LLM", "openai:carminho/AMALIA-9B-50-DPO"
-        ),
-        "STRATEGIC_LLM": os.environ.get(
-            "AMALIA_STRATEGIC_LLM", "openai:carminho/AMALIA-9B-50-DPO"
-        ),
-        "RETRIEVER": os.environ.get("AMALIA_RETRIEVER", "custom"),
-        "OPENSEARCH_INDEX": NAVY_OPENSEARCH_INDEX,
-        "EMBEDDING": os.environ.get(
-            "AMALIA_EMBEDDING",
-            "huggingface:BAAI/bge-m3",
-        ),
-    }
-    os.environ.pop("OLLAMA_BASE_URL", None)
-    for key, value in amalia_vars.items():
-        os.environ[key] = value
-    logger.info("Amália environment configured for research")
-
-
-# ── Qwen3 / Ollama Environment Setup ─────────────────────────────────
-
-def _setup_qwen_env_llm_only():
-    """Configure only the LLM-related env vars for Qwen3 via Ollama."""
-    qwen_vars = {
-        "OLLAMA_BASE_URL": os.environ.get(
-            "QWEN_OLLAMA_BASE_URL", "http://10.10.255.202:11434/"
-        ),
-        "SMART_LLM": os.environ.get("QWEN_SMART_LLM", "ollama:qwen3:8b"),
-        "FAST_LLM": os.environ.get("QWEN_FAST_LLM", "ollama:qwen3:8b"),
-        "STRATEGIC_LLM": os.environ.get("QWEN_STRATEGIC_LLM", "ollama:qwen3:8b"),
-        "OPENAI_API_KEY": os.environ.get("AMALIA_API_KEY", "dummy"),
-        "EMBEDDING": os.environ.get(
-            "AMALIA_EMBEDDING",
-            "huggingface:BAAI/bge-m3",
-        ),
-    }
-    # Clear AMALIA-specific OpenAI base URL so GPTResearcher uses Ollama
-    os.environ.pop("OPENAI_BASE_URL", None)
-    for key, value in qwen_vars.items():
-        os.environ[key] = value
-    logger.info("Qwen3/Ollama LLM environment configured (retriever unchanged)")
-
-
-def _setup_qwen_env():
-    """Configure environment variables for Qwen3 via Ollama (LLM + retriever)."""
-    qwen_vars = {
-        "OLLAMA_BASE_URL": os.environ.get(
-            "QWEN_OLLAMA_BASE_URL", "http://10.10.255.202:11434/"
-        ),
-        "SMART_LLM": os.environ.get("QWEN_SMART_LLM", "ollama:qwen3:8b"),
-        "FAST_LLM": os.environ.get("QWEN_FAST_LLM", "ollama:qwen3:8b"),
-        "STRATEGIC_LLM": os.environ.get("QWEN_STRATEGIC_LLM", "ollama:qwen3:8b"),
-        "OPENAI_API_KEY": os.environ.get("AMALIA_API_KEY", "dummy"),
-        "RETRIEVER": os.environ.get("AMALIA_RETRIEVER", "custom"),
-        "OPENSEARCH_INDEX": NAVY_OPENSEARCH_INDEX,
-        "EMBEDDING": os.environ.get(
-            "AMALIA_EMBEDDING",
-            "huggingface:BAAI/bge-m3",
-        ),
-    }
-    os.environ.pop("OPENAI_BASE_URL", None)
-    for key, value in qwen_vars.items():
-        os.environ[key] = value
-    logger.info("Qwen3/Ollama environment configured for research")
-
-
-def _restore_env(saved_env: Dict[str, Optional[str]]):
-    """Restore original environment variables."""
-    for key, value in saved_env.items():
-        if value is None:
-            os.environ.pop(key, None)
-        else:
-            os.environ[key] = value
-
-
-# ── Core Research Execution ───────────────────────────────────────────
-
-
-async def _run_ttd_dr(request: ResearchRequest, job_id: str, progress_callback=None) -> ResearchResult:
-    """Execute research using the TTD-DR (Iterative Draft Denoising) flow."""
-    import importlib.util
-
-    # Direct import to avoid backend.report_type.__init__ which pulls in
-    # FastAPI/WebSocket and other NOVA-Researcher backend deps.
-    _ttd_spec = importlib.util.spec_from_file_location(
-        "ttd_dr",
-        os.path.join(_nova_researcher_path, "backend", "report_type", "ttd_dr", "ttd_dr.py"),
-    )
-    _ttd_mod = importlib.util.module_from_spec(_ttd_spec)
-    _ttd_spec.loader.exec_module(_ttd_mod)
-    TTDDeepResearchFlow = _ttd_mod.TTDDeepResearchFlow
-
-    # Determine which LLM environment to use based on the selected model's provider
-    provider = await _resolve_model_provider(request.model_id)
-    use_qwen = provider == "ollama"
-
-    saved_env: Dict[str, Optional[str]] = {}
-    for key in _RESEARCH_ENV_KEYS:
-        saved_env[key] = os.environ.get(key)
-
-    if use_qwen:
-        _setup_qwen_env()
-    else:
-        # Default to Amália (LLM + RETRIEVER=custom + OPENSEARCH_INDEX)
-        _setup_amalia_env()
-
-    try:
-        logger.info(
-            f"Starting TTD-DR research job {job_id}: "
-            f"query='{request.query[:80]}...', provider={provider or 'amalia(default)'}"
-        )
-
-        # Always pre-fetch OpenSearch docs (navy corpus) regardless of model
-        lc_docs = await _prefetch_opensearch_docs(
-            query=request.query,
-            index=NAVY_OPENSEARCH_INDEX,
-            max_results=int(os.environ.get("AMALIA_PREFETCH_DOCS", "30")),
-        )
-        if lc_docs:
-            logger.info(
-                f"Job {job_id}: Pre-fetched {len(lc_docs)} OpenSearch docs "
-                f"for TTD-DR via langchain_documents source."
-            )
-        else:
-            logger.warning(
-                f"Job {job_id}: OpenSearch returned no docs for TTD-DR; "
-                f"nested researchers will fall back to web."
-            )
-
-        # report_source drives the nested GPTResearcher instances inside TTDDeepResearchFlow
-        ttd_report_source = (
-            "langchain_documents" if lc_docs else request.report_source.value
-        )
-
-        flow = TTDDeepResearchFlow(
-            query=request.query,
-            report_type="ttd_dr",
-            report_source=ttd_report_source,
-            source_urls=request.source_urls if request.source_urls else None,
-            tone=None,
-            documents=lc_docs if lc_docs else None,
-            progress_callback=progress_callback,
-        )
-
-        report = await flow.run()
-
-        # Post-process to strip hallucinated references
-        report = _strip_references(report)
-
-        # Collect sources gathered during the iterative process
-        source_urls = list(flow._retrieved_sources) if flow._retrieved_sources else []
-
-        # Build retrieved documents list for the UI
-        retrieved_docs = []
-        if lc_docs:
-            for doc in lc_docs:
-                retrieved_docs.append(RetrievedDocument(
-                    title=doc.metadata.get("title", ""),
-                    source=doc.metadata.get("source", ""),
-                    snippet=doc.page_content[:300] if doc.page_content else "",
-                ))
-
-        result = ResearchResult(
-            id=job_id,
-            query=request.query,
-            report_type="ttd_dr",
-            report=report,
-            source_urls=source_urls,
-            research_costs=0.0,
-            status="completed",
-            created_at=datetime.utcnow().isoformat(),
-            tone=request.tone.value,
-            model_id=request.model_id,
-            retrieved_documents=retrieved_docs,
-        )
-
-        logger.success(
-            f"Job {job_id}: TTD-DR research completed. "
-            f"Report length: {len(report)} chars, Sources: {len(source_urls)}"
-        )
-        return result
-
-    except Exception as e:
-        logger.error(f"Job {job_id}: TTD-DR research failed: {e}")
-        return ResearchResult(
-            id=job_id,
-            query=request.query,
-            report_type="ttd_dr",
-            report="",
-            status="failed",
-            error=str(e),
-            created_at=datetime.utcnow().isoformat(),
-        )
-    finally:
-        _restore_env(saved_env)
-
-
-async def _prefetch_opensearch_docs(query: str, index: str, max_results: int = 30):
+async def _prefetch_opensearch_docs(
+    query: str, index: str, max_results: int = 30
+) -> List[Dict[str, Any]]:
     """
-    Pre-fetch relevant documents from the navy OpenSearch corpus.
+    Pre-fetch documents from the navy OpenSearch corpus via the
+    NOVA-Researcher /opensearch/prefetch endpoint.
 
-    Returns a list of LangChain Document objects ready for injection into
-    GPTResearcher via the langchain_documents report source.
+    Returns a list of dicts with 'page_content' and 'metadata' keys.
     """
-    import asyncio as _asyncio
-    from langchain_core.documents import Document as LangChainDoc
-    from gpt_researcher.retrievers.custom.custom import CustomRetriever
-
-    # Ensure the custom retriever reads the correct index
-    os.environ["OPENSEARCH_INDEX"] = index
-
-    logger.info(f"Pre-fetching up to {max_results} docs from OpenSearch index '{index}' for query: {query[:80]}...")
-
     try:
-        retriever = CustomRetriever(query=query)
-        search_results = await _asyncio.to_thread(retriever.search, max_results)
+        resp = await _http_client.post(
+            f"{NOVA_RESEARCHER_URL}/opensearch/prefetch",
+            json={"query": query, "index": index, "max_results": max_results},
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        docs = data.get("documents", [])
+        logger.info(f"Pre-fetched {len(docs)} docs from OpenSearch via API")
+        return docs
     except Exception as exc:
-        logger.error(f"OpenSearch pre-fetch failed: {exc}")
+        logger.error(f"OpenSearch pre-fetch via API failed: {exc}")
         return []
-
-    lc_docs = [
-        LangChainDoc(
-            page_content=hit.get("raw_content") or hit.get("snippet", ""),
-            metadata={
-                "source": hit.get("url", ""),
-                "title": hit.get("title", ""),
-            },
-        )
-        for hit in search_results
-        if hit.get("raw_content") or hit.get("snippet")
-    ]
-
-    logger.info(f"Pre-fetched {len(lc_docs)} docs from OpenSearch.")
-    return lc_docs
 
 
 def _strip_references(report: str) -> str:
@@ -505,45 +248,121 @@ def _strip_references(report: str) -> str:
     return report
 
 
+# ── Core Research Execution (via NOVA-Researcher API) ─────────────────
+
+
+async def _run_ttd_dr(request: ResearchRequest, job_id: str, progress_callback=None) -> ResearchResult:
+    """Execute research using the TTD-DR flow via the NOVA-Researcher API."""
+
+    provider = await _resolve_model_provider(request.model_id)
+
+    try:
+        logger.info(
+            f"Starting TTD-DR research job {job_id}: "
+            f"query='{request.query[:80]}...', provider={provider or 'amalia(default)'}"
+        )
+
+        if progress_callback:
+            await progress_callback(5, "A obter documentos do OpenSearch...")
+
+        # Pre-fetch OpenSearch docs
+        os_docs = await _prefetch_opensearch_docs(
+            query=request.query,
+            index=NAVY_OPENSEARCH_INDEX,
+            max_results=int(os.environ.get("AMALIA_PREFETCH_DOCS", "30")),
+        )
+
+        if os_docs:
+            logger.info(f"Job {job_id}: Pre-fetched {len(os_docs)} OpenSearch docs for TTD-DR.")
+        else:
+            logger.warning(f"Job {job_id}: OpenSearch returned no docs for TTD-DR.")
+
+        if progress_callback:
+            await progress_callback(15, "A executar TTD-DR...")
+
+        # Call NOVA-Researcher TTD-DR endpoint
+        payload = {
+            "query": request.query,
+            "report_source": "langchain_documents" if os_docs else request.report_source.value,
+            "source_urls": request.source_urls,
+            "documents": os_docs,
+        }
+        resp = await _http_client.post(
+            f"{NOVA_RESEARCHER_URL}/research/ttd-dr",
+            json=payload,
+            params={"provider": provider} if provider else {},
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        report = _strip_references(data.get("report", ""))
+        source_urls = data.get("source_urls", [])
+
+        if progress_callback:
+            await progress_callback(95, "A finalizar...")
+
+        # Build retrieved documents list for the UI
+        retrieved_docs = [
+            RetrievedDocument(
+                title=d.get("metadata", {}).get("title", ""),
+                source=d.get("metadata", {}).get("source", ""),
+                snippet=(d.get("page_content", ""))[:300],
+            )
+            for d in os_docs
+        ]
+
+        result = ResearchResult(
+            id=job_id,
+            query=request.query,
+            report_type="ttd_dr",
+            report=report,
+            source_urls=source_urls,
+            research_costs=0.0,
+            status="completed",
+            created_at=datetime.utcnow().isoformat(),
+            tone=request.tone.value,
+            model_id=request.model_id,
+            retrieved_documents=retrieved_docs,
+        )
+
+        logger.success(
+            f"Job {job_id}: TTD-DR research completed. "
+            f"Report length: {len(report)} chars, Sources: {len(source_urls)}"
+        )
+        return result
+
+    except Exception as e:
+        logger.error(f"Job {job_id}: TTD-DR research failed: {e}")
+        return ResearchResult(
+            id=job_id,
+            query=request.query,
+            report_type="ttd_dr",
+            report="",
+            status="failed",
+            error=str(e),
+            created_at=datetime.utcnow().isoformat(),
+        )
+
+
 async def run_research(request: ResearchRequest, progress_callback=None) -> ResearchResult:
     """
-    Execute a research query using GPTResearcher.
+    Execute a research query via the NOVA-Researcher API.
 
     This is the main entry point for running research. It handles:
-    - Setting up the correct model environment based on the selected model's
-      provider (Amália or Qwen3/Ollama)
-    - Pre-fetching context from the navy OpenSearch corpus and injecting it
-      as LangChain documents for GPTResearcher
-    - Collecting results and metadata
+    - Resolving the model provider (Amália or Qwen3/Ollama)
+    - Pre-fetching context from the navy OpenSearch corpus
+    - Calling the NOVA-Researcher /research endpoint
     - Post-processing to strip hallucinated references
     """
-    from gpt_researcher import GPTResearcher
-    from gpt_researcher.utils.enum import Tone as GptTone
-
     job_id = str(uuid.uuid4())[:8]
 
-    # ── TTD-DR uses its own flow class ────────────────────────────────
+    # ── TTD-DR uses its own endpoint ──────────────────────────────────
     if request.report_type == ResearchReportType.TTD_DR:
         return await _run_ttd_dr(request, job_id, progress_callback=progress_callback)
 
-    # Determine which LLM environment to use based on the selected model
     provider = await _resolve_model_provider(request.model_id)
-    use_qwen = provider == "ollama"
-
-    saved_env: Dict[str, Optional[str]] = {}
-    for key in _RESEARCH_ENV_KEYS:
-        saved_env[key] = os.environ.get(key)
-
-    if use_qwen:
-        _setup_qwen_env_llm_only()
-    else:
-        _setup_amalia_env_llm_only()
 
     try:
-        # Map tone
-        tone_map = {t.value: t.value for t in ResearchTone}
-        gpt_tone = getattr(GptTone, request.tone.value, GptTone.Objective)
-
         logger.info(
             f"Starting research job {job_id}: "
             f"query='{request.query[:80]}...', "
@@ -551,77 +370,67 @@ async def run_research(request: ResearchRequest, progress_callback=None) -> Rese
             f"provider={provider or 'amalia(default)'}"
         )
 
-        # Always pre-fetch from the navy OpenSearch corpus
-        lc_docs = []
-        navy_index = NAVY_OPENSEARCH_INDEX
-        lc_docs = await _prefetch_opensearch_docs(
+        if progress_callback:
+            await progress_callback(10, "Fase 1: A obter documentos do OpenSearch...")
+
+        # Pre-fetch from the navy OpenSearch corpus
+        os_docs = await _prefetch_opensearch_docs(
             query=request.query,
-            index=navy_index,
+            index=NAVY_OPENSEARCH_INDEX,
             max_results=int(os.environ.get("AMALIA_PREFETCH_DOCS", "30")),
         )
 
-        if lc_docs:
-            logger.info(
-                f"Job {job_id}: Using {len(lc_docs)} pre-fetched OpenSearch docs "
-                f"via langchain_documents source."
-            )
-            researcher = GPTResearcher(
-                query=request.query,
-                report_type=request.report_type.value,
-                report_source="langchain_documents",
-                tone=gpt_tone,
-                documents=lc_docs,
-            )
+        if os_docs:
+            logger.info(f"Job {job_id}: Using {len(os_docs)} pre-fetched OpenSearch docs.")
         else:
-            logger.warning(
-                f"Job {job_id}: OpenSearch returned no docs; falling back to web search."
-            )
-            researcher = GPTResearcher(
-                query=request.query,
-                report_type=request.report_type.value,
-                report_source="web",
-                tone=gpt_tone,
-            )
+            logger.warning(f"Job {job_id}: OpenSearch returned no docs; falling back to web search.")
 
-        # Phase 1: Conduct research (gather context)
-        logger.info(f"Job {job_id}: Conducting research...")
         if progress_callback:
-            await progress_callback(20, "Fase 1: A recolher informação...")
-        await researcher.conduct_research()
+            await progress_callback(20, "Fase 2: A executar pesquisa...")
 
-        # Phase 2: Generate report
-        logger.info(f"Job {job_id}: Writing report...")
+        # Build request payload for the NOVA-Researcher API
+        payload = {
+            "query": request.query,
+            "report_type": request.report_type.value,
+            "report_source": "langchain_documents" if os_docs else request.report_source.value,
+            "tone": request.tone.value,
+            "source_urls": request.source_urls,
+            "documents": os_docs,
+        }
+
+        resp = await _http_client.post(
+            f"{NOVA_RESEARCHER_URL}/research",
+            json=payload,
+            params={"provider": provider} if provider else {},
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
         if progress_callback:
-            await progress_callback(65, "Fase 2: A gerar relatório...")
-        report = await researcher.write_report()
+            await progress_callback(90, "Fase 3: A processar e finalizar relatório...")
 
-        # Phase 3: Post-process to strip hallucinated references
-        if progress_callback:
-            await progress_callback(92, "Fase 3: A processar e finalizar relatório...")
-        report = _strip_references(report)
+        report = _strip_references(data.get("report", ""))
+        source_urls = data.get("source_urls", [])
+        costs = data.get("costs", 0.0)
+        images = data.get("images", [])
 
-        # Collect metadata
-        source_urls = researcher.get_source_urls() if hasattr(researcher, 'get_source_urls') else []
-        # For langchain_documents path the researcher may not populate source_urls itself,
-        # so fall back to the metadata from the pre-fetched docs
-        if not source_urls and isinstance(getattr(researcher, 'documents', None), list):
+        # Fallback source URLs from pre-fetched docs
+        if not source_urls and os_docs:
             source_urls = [
-                d.metadata.get("source", "")
-                for d in researcher.documents
-                if d.metadata.get("source")
+                d.get("metadata", {}).get("source", "")
+                for d in os_docs
+                if d.get("metadata", {}).get("source")
             ]
-        costs = researcher.get_costs() if hasattr(researcher, 'get_costs') else 0.0
-        images = researcher.get_research_images() if hasattr(researcher, 'get_research_images') else []
 
         # Build retrieved documents list for the UI
-        retrieved_docs = []
-        if lc_docs:
-            for doc in lc_docs:
-                retrieved_docs.append(RetrievedDocument(
-                    title=doc.metadata.get("title", ""),
-                    source=doc.metadata.get("source", ""),
-                    snippet=doc.page_content[:300] if doc.page_content else "",
-                ))
+        retrieved_docs = [
+            RetrievedDocument(
+                title=d.get("metadata", {}).get("title", ""),
+                source=d.get("metadata", {}).get("source", ""),
+                snippet=(d.get("page_content", ""))[:300],
+            )
+            for d in os_docs
+        ]
 
         result = ResearchResult(
             id=job_id,
@@ -658,8 +467,6 @@ async def run_research(request: ResearchRequest, progress_callback=None) -> Rese
             error=str(e),
             created_at=datetime.utcnow().isoformat(),
         )
-    finally:
-        _restore_env(saved_env)
 
 
 async def submit_research_job(request: ResearchRequest) -> ResearchJob:
