@@ -21,7 +21,7 @@ from pydantic import BaseModel
 from open_notebook.config import DATA_FOLDER, NAVY_OPENSEARCH_INDEX
 
 # NOVA-Researcher API base URL
-NOVA_RESEARCHER_URL = os.environ.get("NOVA_RESEARCHER_URL", "http://localhost:8002").rstrip("/")
+NOVA_RESEARCHER_URL = os.environ.get("NOVA_RESEARCHER_URL", "http://localhost:3800").rstrip("/")
 
 
 # ── Enums mirroring GPTResearcher's types ──────────────────────────────
@@ -396,6 +396,10 @@ async def run_research(request: ResearchRequest, progress_callback=None) -> Rese
             "tone": request.tone.value,
             "source_urls": request.source_urls,
             "documents": os_docs,
+            # Tell NOVA-Researcher which OpenSearch index this app uses so
+            # that — on follow-up / cross-corpus queries — the server-side
+            # CustomRetriever targets the right index.
+            "opensearch_index": NAVY_OPENSEARCH_INDEX,
         }
 
         resp = await _http_client.post(

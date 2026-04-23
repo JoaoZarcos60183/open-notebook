@@ -32,6 +32,74 @@ def _get_sam3_url() -> str:
     return url.rstrip("/") + "/segment"
 
 
+def _get_rfdetr_url() -> str:
+    url = os.environ.get("RFDETR_API_URL", "http://localhost:4802")
+    return url.rstrip("/") + "/detect"
+
+
+# Minimal COCO-80 lookup for RF-DETR class filtering
+_COCO_CLASSES = [
+    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train",
+    "truck", "boat", "traffic light", "fire hydrant", "stop sign",
+    "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
+    "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella",
+    "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard",
+    "sports ball", "kite", "baseball bat", "baseball glove", "skateboard",
+    "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork",
+    "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange",
+    "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair",
+    "couch", "potted plant", "bed", "dining table", "toilet", "tv",
+    "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave",
+    "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase",
+    "scissors", "teddy bear", "hair drier", "toothbrush",
+]
+
+
+async def _detect_frame_rfdetr(
+    client: httpx.AsyncClient, frame_bgr: np.ndarray, query: str,
+    confidence_threshold: float = 0.35,
+) -> tuple[int, list]:
+    """Send a frame to RF-DETR /detect, filter by class name if query given."""
+    _, png_bytes = cv2.imencode(".png", frame_bgr)
+    files = {"file": ("frame.png", png_bytes.tobytes(), "image/png")}
+    try:
+        resp = await client.post(_get_rfdetr_url(), files=files)
+        if resp.status_code != 200:
+            logger.warning(f"RF-DETR returned {resp.status_code}: {resp.text[:200]}")
+            return 0, []
+        data = resp.json()
+    except Exception as e:
+        logger.warning(f"RF-DETR call failed: {e}")
+        return 0, []
+
+    det = data.get("detections") or data
+    boxes = det.get("xyxy") or []
+    confs = det.get("confidence") or []
+    class_ids = det.get("class_id") or []
+
+    # confidence gate
+    triples = [
+        (b, c, cid) for b, c, cid in zip(boxes, confs, class_ids)
+        if float(c) >= confidence_threshold
+    ]
+
+    # class-name filter
+    q = (query or "").strip().lower()
+    if q:
+        filtered = []
+        for b, c, cid in triples:
+            try:
+                name = _COCO_CLASSES[int(cid)].lower()
+            except (IndexError, ValueError, TypeError):
+                continue
+            if q in name or name in q:
+                filtered.append((b, c, cid))
+        triples = filtered
+
+    out_boxes = [t[0] for t in triples]
+    return len(out_boxes), out_boxes
+
+
 async def _segment_frame(
     client: httpx.AsyncClient, frame_bgr: np.ndarray, query: str
 ) -> tuple[int, list]:
@@ -80,14 +148,22 @@ def _draw_boxes(frame_bgr: np.ndarray, boxes: list, query: str, color: tuple) ->
 async def run_video_tracking(
     video_path: str,
     target: str,
+    engine: str = "sam3",
 ) -> Dict[str, Any]:
     """
-    Track an object across video frames using SAM3.
+    Track an object across video frames.
+
+    Args:
+        engine: "sam3" (open-vocabulary segmentation) or
+                "rfdetr" (fast closed-vocabulary COCO detection)
 
     Returns:
         {"text": "markdown summary", "video_path": "/path/to/annotated.mp4"}
     """
-    logger.info(f"Video tracking: target='{target}', video={video_path}")
+    engine = (engine or "sam3").lower().strip()
+    if engine not in {"sam3", "rfdetr"}:
+        raise ValueError(f"Invalid engine '{engine}'. Must be 'sam3' or 'rfdetr'.")
+    logger.info(f"Video tracking ({engine}): target='{target}', video={video_path}")
 
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -125,6 +201,8 @@ async def run_video_tracking(
 
     async def _process_frame(client, idx):
         async with sem:
+            if engine == "rfdetr":
+                return idx, await _detect_frame_rfdetr(client, frames[idx], target)
             return idx, await _segment_frame(client, frames[idx], target)
 
     async with httpx.AsyncClient(timeout=120.0) as client:
@@ -189,7 +267,7 @@ async def run_video_tracking(
         f"|---|---|\n"
         f"| Resolution | {width}×{height} |\n"
         f"| Duration | {duration_s:.1f}s ({len(frames)} frames @ {fps:.0f} fps) |\n"
-        f"| Frames analyzed (SAM3) | {len(sampled_indices)} (every {sample_rate}th) |\n"
+        f"| Frames analyzed ({engine.upper()}) | {len(sampled_indices)} (every {sample_rate}th) |\n"
         f"| Total detections | {detections_total} |\n"
         f"| Frames with tracking | {frames_with_detections}/{len(frames)} |\n"
     )

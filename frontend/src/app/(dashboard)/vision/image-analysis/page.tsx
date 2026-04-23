@@ -16,6 +16,7 @@ export default function ImageAnalysisPage() {
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [engine, setEngine] = useState<"sam3" | "rfdetr">("sam3");
   const [isLoading, setIsLoading] = useState(false);
   const [resultText, setResultText] = useState<string | null>(null);
   const [resultImage, setResultImage] = useState<string | null>(null);
@@ -67,6 +68,7 @@ export default function ImageAnalysisPage() {
       const formData = new FormData();
       formData.append("image", image);
       formData.append("query", query);
+      formData.append("engine", engine);
 
       const apiUrl = await getApiUrl();
       const token = useAuthStore.getState().token;
@@ -177,6 +179,25 @@ export default function ImageAnalysisPage() {
           />
         </div>
 
+        {/* Engine Selector */}
+        <div className="space-y-2">
+          <Label htmlFor="engine">Detection Engine</Label>
+          <select
+            id="engine"
+            value={engine}
+            onChange={(e) => setEngine(e.target.value as "sam3" | "rfdetr")}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <option value="sam3">SAM3 (open-vocabulary, high-quality)</option>
+            <option value="rfdetr">RF-DETR (COCO classes, real-time)</option>
+          </select>
+          <p className="text-xs text-muted-foreground">
+            {engine === "sam3"
+              ? "Describe anything in natural language. Slower but more flexible."
+              : "Detects COCO-80 classes (person, car, boat, dog...). Leave query blank to detect everything; type a class name to filter."}
+          </p>
+        </div>
+
         {/* Error */}
         {error && (
           <Alert variant="destructive">
@@ -186,7 +207,7 @@ export default function ImageAnalysisPage() {
 
         {/* Actions */}
         <div className="flex gap-3">
-          <Button type="submit" disabled={isLoading || !image || !query.trim()}>
+          <Button type="submit" disabled={isLoading || !image || (engine === "sam3" && !query.trim())}>
             {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

@@ -32,6 +32,7 @@ MAX_VIDEO_SIZE = 200 * 1024 * 1024  # 200 MB
 async def analyze_image(
     image: UploadFile = File(...),
     query: str = Form(...),
+    engine: str = Form("sam3"),
 ):
     """
     Analyze an uploaded image using the MCP vision researcher.
@@ -70,10 +71,15 @@ async def analyze_image(
 
     logger.info(f"Vision analysis requested: query='{query[:80]}', image={saved_path}")
 
+    engine_norm = (engine or "sam3").lower().strip()
+    if engine_norm not in {"sam3", "rfdetr"}:
+        raise HTTPException(status_code=400, detail=f"Invalid engine '{engine}'. Must be 'sam3' or 'rfdetr'.")
+
     try:
         result = await run_vision_analysis(
             image_path=saved_path,
             query=query.strip(),
+            engine=engine_norm,
         )
         return result
 
@@ -92,6 +98,7 @@ async def analyze_image(
 async def track_video(
     video: UploadFile = File(...),
     target: str = Form(...),
+    engine: str = Form("sam3"),
 ):
     """
     Track an object across video frames using SAM3.
@@ -127,11 +134,16 @@ async def track_video(
 
     logger.info(f"Video tracking requested: target='{target[:80]}', video={saved_path}")
 
+    engine_norm = (engine or "sam3").lower().strip()
+    if engine_norm not in {"sam3", "rfdetr"}:
+        raise HTTPException(status_code=400, detail=f"Invalid engine '{engine}'. Must be 'sam3' or 'rfdetr'.")
+
     output_path = None
     try:
         result = await run_video_tracking(
             video_path=saved_path,
             target=target.strip(),
+            engine=engine_norm,
         )
         output_path = result["video_path"]
         text_summary = result["text"]

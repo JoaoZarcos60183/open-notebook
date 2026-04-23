@@ -16,6 +16,7 @@ export default function VideoTrackingPage() {
   const [video, setVideo] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [target, setTarget] = useState("");
+  const [engine, setEngine] = useState<"sam3" | "rfdetr">("sam3");
   const [isLoading, setIsLoading] = useState(false);
   const [resultVideo, setResultVideo] = useState<string | null>(null);
   const [resultText, setResultText] = useState<string | null>(null);
@@ -66,6 +67,7 @@ export default function VideoTrackingPage() {
       const formData = new FormData();
       formData.append("video", video);
       formData.append("target", target);
+      formData.append("engine", engine);
 
       const apiUrl = await getApiUrl();
       const token = useAuthStore.getState().token;
@@ -188,6 +190,25 @@ export default function VideoTrackingPage() {
           />
         </div>
 
+        {/* Engine Selector */}
+        <div className="space-y-2">
+          <Label htmlFor="engine">Detection Engine</Label>
+          <select
+            id="engine"
+            value={engine}
+            onChange={(e) => setEngine(e.target.value as "sam3" | "rfdetr")}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <option value="sam3">SAM3 (open-vocabulary, segmentation)</option>
+            <option value="rfdetr">RF-DETR (COCO classes, real-time)</option>
+          </select>
+          <p className="text-xs text-muted-foreground">
+            {engine === "sam3"
+              ? "Track anything described in natural language. Slower per frame."
+              : "Tracks COCO-80 classes (person, car, boat...). Type a class name to filter; leave blank to track every detection."}
+          </p>
+        </div>
+
         {/* Error */}
         {error && (
           <Alert variant="destructive">
@@ -199,7 +220,7 @@ export default function VideoTrackingPage() {
         <div className="flex gap-3">
           <Button
             type="submit"
-            disabled={isLoading || !video || !target.trim()}
+            disabled={isLoading || !video || (engine === "sam3" && !target.trim())}
           >
             {isLoading ? (
               <>

@@ -17,20 +17,24 @@ NOVA_RESEARCHER_URL = os.environ.get("NOVA_RESEARCHER_URL", "http://localhost:80
 async def run_vision_analysis(
     image_path: str,
     query: str,
+    engine: str = "sam3",
 ) -> Dict[str, Any]:
     """
     Run image analysis by calling the NOVA-Researcher /vision/analyze endpoint.
 
+    Args:
+        engine: "sam3" (default) or "rfdetr"
+
     Returns:
         {"text": "...", "image_base64": "data:image/png;base64,..." | null}
     """
-    logger.info(f"Starting vision analysis via NOVA-Researcher API: '{query[:100]}'")
+    logger.info(f"Starting vision analysis via NOVA-Researcher API ({engine}): '{query[:100]}'")
 
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
             with open(image_path, "rb") as f:
                 files = {"image": (os.path.basename(image_path), f, "image/png")}
-                data = {"query": query}
+                data = {"query": query, "engine": engine}
                 resp = await client.post(
                     f"{NOVA_RESEARCHER_URL}/vision/analyze",
                     files=files,

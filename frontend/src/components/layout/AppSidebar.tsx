@@ -51,6 +51,7 @@ import {
   Eye,
   Image as ImageIcon,
   Video,
+  MapPin,
 } from "lucide-react";
 
 const getNavigation = (t: TranslationKeys, isAdmin: boolean) => {
@@ -98,6 +99,16 @@ const getNavigation = (t: TranslationKeys, isAdmin: boolean) => {
           name: "Video Tracking",
           href: "/vision/video-tracking",
           icon: Video,
+        },
+      ],
+    },
+    {
+      title: "Navigation",
+      items: [
+        {
+          name: "Route Planner",
+          href: "/navigation",
+          icon: MapPin,
         },
       ],
     },
