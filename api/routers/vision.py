@@ -9,6 +9,7 @@ import base64
 import os
 import uuid
 from pathlib import Path
+from typing import Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from loguru import logger
@@ -31,7 +32,7 @@ MAX_VIDEO_SIZE = 200 * 1024 * 1024  # 200 MB
 @router.post("/vision/image-analysis")
 async def analyze_image(
     image: UploadFile = File(...),
-    query: str = Form(...),
+    query: Optional[str] = Form(None),
     engine: str = Form("sam3"),
 ):
     """
@@ -39,7 +40,10 @@ async def analyze_image(
 
     Accepts a multipart form with:
     - image: the image file (PNG, JPG, JPEG, WEBP)
-    - query: the user's question / analysis request
+    - query: the user's question / analysis request.
+             Required for ``engine='sam3'``; optional for ``engine='rfdetr'``
+             (where an empty query triggers class-agnostic detection).
+    - engine: "sam3" (default) or "rfdetr"
 
     Returns JSON with:
     - text: the analysis report text
@@ -58,8 +62,19 @@ async def analyze_image(
     if len(image_bytes) > MAX_IMAGE_SIZE:
         raise HTTPException(status_code=413, detail="Image exceeds 20 MB limit.")
 
-    if not query.strip():
-        raise HTTPException(status_code=400, detail="Query is required.")
+    engine_norm = (engine or "sam3").lower().strip()
+    if engine_norm not in {"sam3", "rfdetr"}:
+        raise HTTPException(status_code=400, detail=f"Invalid engine '{engine}'. Must be 'sam3' or 'rfdetr'.")
+
+    # Normalise query: empty / whitespace-only → None.
+    normalised_query: Optional[str] = query.strip() if (query and query.strip()) else None
+
+    # SAM3 is open-vocabulary → needs a prompt. RF-DETR can run prompt-free.
+    if engine_norm == "sam3" and not normalised_query:
+        raise HTTPException(
+            status_code=400,
+            detail="Query is required for the SAM3 engine. Switch to 'rfdetr' for prompt-free detection.",
+        )
 
     # Save to a unique file so the MCP tool can read it by path
     file_id = uuid.uuid4().hex[:12]
@@ -69,16 +84,16 @@ async def analyze_image(
     with open(saved_path, "wb") as f:
         f.write(image_bytes)
 
-    logger.info(f"Vision analysis requested: query='{query[:80]}', image={saved_path}")
-
-    engine_norm = (engine or "sam3").lower().strip()
-    if engine_norm not in {"sam3", "rfdetr"}:
-        raise HTTPException(status_code=400, detail=f"Invalid engine '{engine}'. Must be 'sam3' or 'rfdetr'.")
+    logger.info(
+        f"Vision analysis requested: engine={engine_norm}, "
+        f"query={'<none>' if normalised_query is None else repr(normalised_query[:80])}, "
+        f"image={saved_path}"
+    )
 
     try:
         result = await run_vision_analysis(
             image_path=saved_path,
-            query=query.strip(),
+            query=normalised_query,
             engine=engine_norm,
         )
         return result
@@ -97,15 +112,17 @@ async def analyze_image(
 @router.post("/vision/video-tracking")
 async def track_video(
     video: UploadFile = File(...),
-    target: str = Form(...),
+    target: Optional[str] = Form(None),
     engine: str = Form("sam3"),
 ):
     """
-    Track an object across video frames using SAM3.
+    Track an object across video frames using SAM3 or RF-DETR.
 
     Accepts a multipart form with:
     - video: the video file (MP4, WEBM, MOV, AVI)
-    - target: the object to track (e.g. "red car", "boat")
+    - target: the object to track (e.g. "red car", "boat").
+              Required for ``engine='sam3'``; optional for ``engine='rfdetr'``.
+    - engine: "sam3" (default) or "rfdetr"
 
     Returns JSON with:
     - text: markdown tracking summary
@@ -122,8 +139,17 @@ async def track_video(
     if len(video_bytes) > MAX_VIDEO_SIZE:
         raise HTTPException(status_code=413, detail="Video exceeds 200 MB limit.")
 
-    if not target.strip():
-        raise HTTPException(status_code=400, detail="Target element is required.")
+    engine_norm = (engine or "sam3").lower().strip()
+    if engine_norm not in {"sam3", "rfdetr"}:
+        raise HTTPException(status_code=400, detail=f"Invalid engine '{engine}'. Must be 'sam3' or 'rfdetr'.")
+
+    normalised_target: Optional[str] = target.strip() if (target and target.strip()) else None
+
+    if engine_norm == "sam3" and not normalised_target:
+        raise HTTPException(
+            status_code=400,
+            detail="Target element is required for the SAM3 engine. Switch to 'rfdetr' for prompt-free tracking.",
+        )
 
     file_id = uuid.uuid4().hex[:12]
     saved_filename = f"{file_id}{ext}"
@@ -132,17 +158,17 @@ async def track_video(
     with open(saved_path, "wb") as f:
         f.write(video_bytes)
 
-    logger.info(f"Video tracking requested: target='{target[:80]}', video={saved_path}")
-
-    engine_norm = (engine or "sam3").lower().strip()
-    if engine_norm not in {"sam3", "rfdetr"}:
-        raise HTTPException(status_code=400, detail=f"Invalid engine '{engine}'. Must be 'sam3' or 'rfdetr'.")
+    logger.info(
+        f"Video tracking requested: engine={engine_norm}, "
+        f"target={'<none>' if normalised_target is None else repr(normalised_target[:80])}, "
+        f"video={saved_path}"
+    )
 
     output_path = None
     try:
         result = await run_video_tracking(
             video_path=saved_path,
-            target=target.strip(),
+            target=normalised_target,
             engine=engine_norm,
         )
         output_path = result["video_path"]

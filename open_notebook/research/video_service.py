@@ -37,21 +37,103 @@ def _get_rfdetr_url() -> str:
     return url.rstrip("/") + "/detect"
 
 
-# Minimal COCO-80 lookup for RF-DETR class filtering
+# COCO-91 lookup for RF-DETR class filtering.
+# RF-DETR returns COCO *category_id* values (1=person, 2=bicycle, ...),
+# NOT the contiguous 0-79 indexing used by some YOLO builds. Using the
+# wrong table causes a one-off shift where every detected person is
+# labelled as a bicycle, etc.
 _COCO_CLASSES = [
-    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train",
-    "truck", "boat", "traffic light", "fire hydrant", "stop sign",
-    "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
-    "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella",
-    "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard",
-    "sports ball", "kite", "baseball bat", "baseball glove", "skateboard",
-    "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork",
-    "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange",
-    "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair",
-    "couch", "potted plant", "bed", "dining table", "toilet", "tv",
-    "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave",
-    "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase",
-    "scissors", "teddy bear", "hair drier", "toothbrush",
+    "N/A",            # 0
+    "person",         # 1
+    "bicycle",        # 2
+    "car",            # 3
+    "motorcycle",     # 4
+    "airplane",       # 5
+    "bus",            # 6
+    "train",          # 7
+    "truck",          # 8
+    "boat",           # 9
+    "traffic light",  # 10
+    "fire hydrant",   # 11
+    "N/A",            # 12
+    "stop sign",      # 13
+    "parking meter",  # 14
+    "bench",          # 15
+    "bird",           # 16
+    "cat",            # 17
+    "dog",            # 18
+    "horse",          # 19
+    "sheep",          # 20
+    "cow",            # 21
+    "elephant",       # 22
+    "bear",           # 23
+    "zebra",          # 24
+    "giraffe",        # 25
+    "N/A",            # 26
+    "backpack",       # 27
+    "umbrella",       # 28
+    "N/A",            # 29
+    "N/A",            # 30
+    "handbag",        # 31
+    "tie",            # 32
+    "suitcase",       # 33
+    "frisbee",        # 34
+    "skis",           # 35
+    "snowboard",      # 36
+    "sports ball",    # 37
+    "kite",           # 38
+    "baseball bat",   # 39
+    "baseball glove", # 40
+    "skateboard",     # 41
+    "surfboard",      # 42
+    "tennis racket",  # 43
+    "bottle",         # 44
+    "N/A",            # 45
+    "wine glass",     # 46
+    "cup",            # 47
+    "fork",           # 48
+    "knife",          # 49
+    "spoon",          # 50
+    "bowl",           # 51
+    "banana",         # 52
+    "apple",          # 53
+    "sandwich",       # 54
+    "orange",         # 55
+    "broccoli",       # 56
+    "carrot",         # 57
+    "hot dog",        # 58
+    "pizza",          # 59
+    "donut",          # 60
+    "cake",           # 61
+    "chair",          # 62
+    "couch",          # 63
+    "potted plant",   # 64
+    "bed",            # 65
+    "N/A",            # 66
+    "dining table",   # 67
+    "N/A",            # 68
+    "N/A",            # 69
+    "toilet",         # 70
+    "N/A",            # 71
+    "tv",             # 72
+    "laptop",         # 73
+    "mouse",          # 74
+    "remote",         # 75
+    "keyboard",       # 76
+    "cell phone",     # 77
+    "microwave",      # 78
+    "oven",           # 79
+    "toaster",        # 80
+    "sink",           # 81
+    "refrigerator",   # 82
+    "N/A",            # 83
+    "book",           # 84
+    "clock",          # 85
+    "vase",           # 86
+    "scissors",       # 87
+    "teddy bear",     # 88
+    "hair drier",     # 89
+    "toothbrush",     # 90
 ]
 
 
@@ -147,13 +229,15 @@ def _draw_boxes(frame_bgr: np.ndarray, boxes: list, query: str, color: tuple) ->
 
 async def run_video_tracking(
     video_path: str,
-    target: str,
+    target: Optional[str],
     engine: str = "sam3",
 ) -> Dict[str, Any]:
     """
     Track an object across video frames.
 
     Args:
+        target: text prompt / class filter. Required for ``sam3``; optional
+                for ``rfdetr`` (``None``/empty → track every detection).
         engine: "sam3" (open-vocabulary segmentation) or
                 "rfdetr" (fast closed-vocabulary COCO detection)
 
@@ -163,7 +247,16 @@ async def run_video_tracking(
     engine = (engine or "sam3").lower().strip()
     if engine not in {"sam3", "rfdetr"}:
         raise ValueError(f"Invalid engine '{engine}'. Must be 'sam3' or 'rfdetr'.")
-    logger.info(f"Video tracking ({engine}): target='{target}', video={video_path}")
+
+    # Normalise target.
+    norm_target: Optional[str] = target.strip() if (target and target.strip()) else None
+    if engine == "sam3" and not norm_target:
+        raise ValueError("The SAM3 engine requires a non-empty target.")
+
+    logger.info(
+        f"Video tracking ({engine}): target={'<none>' if norm_target is None else repr(norm_target)}, "
+        f"video={video_path}"
+    )
 
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -202,8 +295,8 @@ async def run_video_tracking(
     async def _process_frame(client, idx):
         async with sem:
             if engine == "rfdetr":
-                return idx, await _detect_frame_rfdetr(client, frames[idx], target)
-            return idx, await _segment_frame(client, frames[idx], target)
+                return idx, await _detect_frame_rfdetr(client, frames[idx], norm_target or "")
+            return idx, await _segment_frame(client, frames[idx], norm_target or "")
 
     async with httpx.AsyncClient(timeout=120.0) as client:
         tasks = [_process_frame(client, idx) for idx in sampled_indices]
@@ -235,9 +328,10 @@ async def run_video_tracking(
 
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     writer = cv2.VideoWriter(raw_path, fourcc, fps, (width, height))
+    label_text = norm_target or "object"
     for i, frame in enumerate(frames):
         boxes = frame_boxes.get(i, [])
-        writer.write(_draw_boxes(frame, boxes, target, color))
+        writer.write(_draw_boxes(frame, boxes, label_text, color))
     writer.release()
 
     # Re-encode to H.264 so browsers can play the video inline
@@ -261,8 +355,9 @@ async def run_video_tracking(
     frames_with_detections = sum(1 for b in frame_boxes.values() if b)
     duration_s = len(frames) / fps
 
+    summary_title = norm_target if norm_target else "all detections (prompt-free)"
     summary = (
-        f"## Video Tracking: \"{target}\"\n\n"
+        f"## Video Tracking: \"{summary_title}\"\n\n"
         f"| Metric | Value |\n"
         f"|---|---|\n"
         f"| Resolution | {width}×{height} |\n"

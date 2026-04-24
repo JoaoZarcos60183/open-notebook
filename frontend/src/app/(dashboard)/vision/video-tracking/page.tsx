@@ -53,8 +53,12 @@ export default function VideoTrackingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!video || !target.trim()) {
-      setError("Please provide both a video and a target element to track.");
+    if (!video) {
+      setError("Please provide a video.");
+      return;
+    }
+    if (engine === "sam3" && !target.trim()) {
+      setError("SAM3 requires a target element. Describe what to track, or switch to RF-DETR for prompt-free tracking.");
       return;
     }
 

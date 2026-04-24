@@ -54,8 +54,12 @@ export default function ImageAnalysisPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!image || !query.trim()) {
-      setError("Please provide both an image and a query.");
+    if (!image) {
+      setError("Please provide an image.");
+      return;
+    }
+    if (engine === "sam3" && !query.trim()) {
+      setError("SAM3 requires a query. Describe what to look for, or switch to RF-DETR for prompt-free detection.");
       return;
     }
 
