@@ -320,7 +320,7 @@ export function ResearchJobsList() {
         open={!!selectedJobId}
         onOpenChange={(open) => !open && setSelectedJobId(null)}
       >
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden p-0 flex flex-col">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden p-0 flex flex-col">
           <DialogHeader className="px-6 pt-6">
             <DialogTitle>{selectedJob?.query ?? "Research Report"}</DialogTitle>
             <DialogDescription>

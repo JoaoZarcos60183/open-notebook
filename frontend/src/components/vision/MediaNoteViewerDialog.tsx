@@ -72,10 +72,17 @@ export function MediaNoteViewerDialog({
 }
 
 /**
- * Inspect a note's content and, if it was produced by the vision
- * "Add to Notebook" flow (i.e. embeds an image or video pointing at
- * ``/api/vision/note-asset/<file>``), return the parts needed to render
- * a read-only viewer. Returns ``null`` for ordinary text notes.
+ * Inspect a note's content and, if it embeds an image or video produced by
+ * the vision "Add to Notebook" flow, return the parts needed to render a
+ * read-only viewer.
+ *
+ * Supports both formats:
+ *   - the current format: ``![title](http://.../api/vision/note-asset/<file>)``
+ *     for images and ``[▶ title](.../note-asset/<file>.mp4)`` for videos;
+ *   - the legacy format: an inline base64 ``data:image/...`` markdown image
+ *     or an ``<video src="data:video/...">`` HTML tag.
+ *
+ * Returns ``null`` for ordinary text notes.
  */
 export function detectMediaNote(content: string | null | undefined): {
   kind: 'image' | 'video'
@@ -84,9 +91,10 @@ export function detectMediaNote(content: string | null | undefined): {
 } | null {
   if (!content) return null
 
-  // Image: markdown ``![alt](url)`` whose URL points to the note-asset endpoint.
+  // ── Image: any markdown ``![alt](url)`` whose URL is either a stored
+  //    note-asset file or a base64 data URL.
   const imageMatch = content.match(
-    /!\[[^\]]*\]\((\S*\/api\/vision\/note-asset\/[^)\s]+)\)/,
+    /!\[[^\]]*\]\((\S*\/api\/vision\/note-asset\/[^)\s]+|data:image\/[^)\s]+)\)/,
   )
   if (imageMatch) {
     const mediaUrl = imageMatch[1]
@@ -94,14 +102,23 @@ export function detectMediaNote(content: string | null | undefined): {
     return { kind: 'image', mediaUrl, analysisText }
   }
 
-  // Video: link ``[label](url)`` whose URL points to the note-asset endpoint
-  // and ends with a known video extension.
-  const videoMatch = content.match(
+  // ── Video: markdown link to a stored note-asset video file.
+  const videoLinkMatch = content.match(
     /\[[^\]]*\]\((\S*\/api\/vision\/note-asset\/[^)\s]+\.(?:mp4|webm|mov))\)/i,
   )
-  if (videoMatch) {
-    const mediaUrl = videoMatch[1]
-    const analysisText = content.replace(videoMatch[0], '').trim()
+  if (videoLinkMatch) {
+    const mediaUrl = videoLinkMatch[1]
+    const analysisText = content.replace(videoLinkMatch[0], '').trim()
+    return { kind: 'video', mediaUrl, analysisText }
+  }
+
+  // ── Legacy: ``<video ... src="..."></video>`` (data URL or http URL).
+  const videoTagMatch = content.match(
+    /<video[^>]*\bsrc=["']([^"']+)["'][^>]*>(?:\s*<\/video>)?/i,
+  )
+  if (videoTagMatch) {
+    const mediaUrl = videoTagMatch[1]
+    const analysisText = content.replace(videoTagMatch[0], '').trim()
     return { kind: 'video', mediaUrl, analysisText }
   }
 

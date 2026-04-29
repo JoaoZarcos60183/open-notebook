@@ -271,7 +271,7 @@ export const ptBR = {
     createSuccess: "Notebook criado com sucesso",
     updateSuccess: "Notebook atualizado com sucesso",
     deleteSuccess: "Notebook eliminado com sucesso",
-    agentNotes: "Notas do Agente",
+    agentNotes: "Notas de Agentes",
   },
   sources: {
     title: "Fontes",
@@ -518,7 +518,7 @@ export const ptBR = {
     processing: "A processar...",
     saveToNotebooks: "Guardar em Notebooks",
     searchDesc:
-      "Pesquise na sua base de conhecimento por palavras-chave ou conceitos específicos",
+      "Pesquise na base de dados por palavras-chave ou conceitos específicos",
     enterSearchPlaceholder: "Digite sua pesquisa...",
     pressToSearch: "Pressione Enter para pesquisar",
     searchType: "Tipo de Pesquisa",

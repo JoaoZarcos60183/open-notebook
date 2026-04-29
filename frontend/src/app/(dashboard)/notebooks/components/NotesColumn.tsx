@@ -166,7 +166,7 @@ export function NotesColumn({
                     }}
                   >
                     <div className="flex gap-3 items-stretch">
-                      {media && (
+                      {media ? (
                         <div className="relative flex-shrink-0 w-20 self-stretch min-h-[5rem] rounded-md overflow-hidden border bg-muted">
                           {media.kind === 'image' ? (
                             // eslint-disable-next-line @next/next/no-img-element
@@ -189,6 +189,20 @@ export function NotesColumn({
                               </div>
                             </>
                           )}
+                        </div>
+                      ) : (
+                        <div
+                          className={`relative flex-shrink-0 w-20 self-stretch min-h-[5rem] rounded-md overflow-hidden border flex items-center justify-center ${
+                            isAi
+                              ? 'bg-primary/10 border-primary/30'
+                              : 'bg-muted border-border'
+                          }`}
+                        >
+                          <TypeIcon
+                            className={`h-8 w-8 ${
+                              isAi ? 'text-primary' : 'text-muted-foreground'
+                            }`}
+                          />
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
