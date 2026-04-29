@@ -204,7 +204,7 @@ export const ptBR = {
   navigation: {
     collect: "Base de Dados",
     process: "Interagir",
-    create: "Criar",
+    create: "Agentes Iterativos",
     manage: "Gerenciar",
     sources: "Fontes",
     notebooks: "Notebooks",
@@ -271,7 +271,7 @@ export const ptBR = {
     createSuccess: "Notebook criado com sucesso",
     updateSuccess: "Notebook atualizado com sucesso",
     deleteSuccess: "Notebook eliminado com sucesso",
-    agentNotes: "Notas de Agentes",
+    agentNotes: "Colaboração de Agentes",
   },
   sources: {
     title: "Fontes",
@@ -1066,7 +1066,7 @@ export const ptBR = {
       "Gere relatórios de pesquisa aprofundados com o NOVA-Researcher e Amália IA.",
     newResearch: "Nova Pesquisa",
     history: "Histórico",
-    queryTitle: "Pergunta de Pesquisa",
+    queryTitle: "Tópicos de Relatório Profundo",
     queryDescription:
       "Insira a sua pergunta ou tópico de pesquisa. Seja específico para melhores resultados.",
     queryPlaceholder:

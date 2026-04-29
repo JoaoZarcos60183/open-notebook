@@ -271,7 +271,7 @@ export const enUS = {
     createSuccess: "Notebook created successfully",
     updateSuccess: "Notebook updated successfully",
     deleteSuccess: "Notebook deleted successfully",
-    agentNotes: "Agent Notes",
+    agentNotes: "Agents Collab",
   },
   sources: {
     title: "Sources",

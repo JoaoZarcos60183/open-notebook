@@ -1,8 +1,58 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { getApiUrl } from '@/lib/config'
+
+/**
+ * Normalize a stored note-asset URL to a path-only form (e.g.
+ * "/api/vision/note-asset/<file>"). Older notes embed an absolute URL
+ * such as "http://localhost:5055/api/vision/note-asset/..." which only
+ * works when the browser runs on the same host as the API server.
+ * Returning the path lets the consumer prefix the live API base URL.
+ *
+ * Data URLs are returned unchanged.
+ */
+function normalizeAssetUrl(url: string): string {
+  if (!url) return url
+  if (url.startsWith('data:')) return url
+  const idx = url.indexOf('/api/vision/note-asset/')
+  if (idx >= 0) return url.slice(idx)
+  return url
+}
+
+/**
+ * React hook that resolves a normalized note-asset URL into a fully
+ * qualified URL using the live API base. Data URLs and already absolute
+ * URLs are returned as-is.
+ */
+function useResolvedAssetUrl(mediaUrl: string): string {
+  const [resolved, setResolved] = useState<string>(mediaUrl)
+  useEffect(() => {
+    let cancelled = false
+    if (!mediaUrl || mediaUrl.startsWith('data:') || /^https?:\/\//i.test(mediaUrl)) {
+      setResolved(mediaUrl)
+      return
+    }
+    if (mediaUrl.startsWith('/')) {
+      getApiUrl()
+        .then((api) => {
+          if (!cancelled) setResolved(`${api}${mediaUrl}`)
+        })
+        .catch(() => {
+          if (!cancelled) setResolved(mediaUrl)
+        })
+    } else {
+      setResolved(mediaUrl)
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [mediaUrl])
+  return resolved
+}
 
 interface MediaNoteViewerDialogProps {
   open: boolean
@@ -30,6 +80,7 @@ export function MediaNoteViewerDialog({
   analysisText,
 }: MediaNoteViewerDialogProps) {
   const { t } = useTranslation()
+  const resolvedUrl = useResolvedAssetUrl(mediaUrl)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -42,13 +93,13 @@ export function MediaNoteViewerDialog({
           {kind === 'image' ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={mediaUrl}
+              src={resolvedUrl}
               alt={title || ''}
               className="max-w-full h-auto rounded-md border"
             />
           ) : (
             <video
-              src={mediaUrl}
+              src={resolvedUrl}
               controls
               className="max-w-full h-auto rounded-md border"
             />
@@ -97,7 +148,7 @@ export function detectMediaNote(content: string | null | undefined): {
     /!\[[^\]]*\]\((\S*\/api\/vision\/note-asset\/[^)\s]+|data:image\/[^)\s]+)\)/,
   )
   if (imageMatch) {
-    const mediaUrl = imageMatch[1]
+    const mediaUrl = normalizeAssetUrl(imageMatch[1])
     const analysisText = content.replace(imageMatch[0], '').trim()
     return { kind: 'image', mediaUrl, analysisText }
   }
@@ -107,7 +158,7 @@ export function detectMediaNote(content: string | null | undefined): {
     /\[[^\]]*\]\((\S*\/api\/vision\/note-asset\/[^)\s]+\.(?:mp4|webm|mov))\)/i,
   )
   if (videoLinkMatch) {
-    const mediaUrl = videoLinkMatch[1]
+    const mediaUrl = normalizeAssetUrl(videoLinkMatch[1])
     const analysisText = content.replace(videoLinkMatch[0], '').trim()
     return { kind: 'video', mediaUrl, analysisText }
   }
@@ -117,10 +168,12 @@ export function detectMediaNote(content: string | null | undefined): {
     /<video[^>]*\bsrc=["']([^"']+)["'][^>]*>(?:\s*<\/video>)?/i,
   )
   if (videoTagMatch) {
-    const mediaUrl = videoTagMatch[1]
+    const mediaUrl = normalizeAssetUrl(videoTagMatch[1])
     const analysisText = content.replace(videoTagMatch[0], '').trim()
     return { kind: 'video', mediaUrl, analysisText }
   }
 
   return null
 }
+
+export { useResolvedAssetUrl }

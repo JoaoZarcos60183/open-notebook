@@ -320,7 +320,7 @@ export function ResearchJobsList() {
         open={!!selectedJobId}
         onOpenChange={(open) => !open && setSelectedJobId(null)}
       >
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden p-0 flex flex-col">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-hidden p-0 flex flex-col">
           <DialogHeader className="px-6 pt-6">
             <DialogTitle>{selectedJob?.query ?? "Research Report"}</DialogTitle>
             <DialogDescription>
@@ -329,7 +329,7 @@ export function ResearchJobsList() {
           </DialogHeader>
 
           {selectedJob?.result ? (
-            <div className="flex-1 min-h-0 overflow-hidden grid grid-cols-[200px_1fr] gap-0">
+            <div className="flex-1 min-h-0 overflow-hidden grid grid-cols-[140px_1fr] gap-0">
               {/* Table of contents */}
               {(() => {
                 const toc = buildToc(selectedJob.result.report);

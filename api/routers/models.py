@@ -175,6 +175,55 @@ async def get_models(
         else:
             models = await Model.get_all()
 
+        # Deduplicate models that share the same (provider, name, type).
+        # Such duplicates can exist if the discovery dialog registered the
+        # same model multiple times in parallel. Prefer rows that are
+        # currently referenced by DefaultModels, then fall back to the
+        # earliest-created row.
+        try:
+            from open_notebook.ai.models import DefaultModels
+
+            defaults = await DefaultModels.get_instance()
+            preferred_ids = {
+                v
+                for v in (
+                    defaults.default_chat_model,
+                    defaults.default_transformation_model,
+                    defaults.default_tools_model,
+                    defaults.large_context_model,
+                    defaults.default_embedding_model,
+                    defaults.default_text_to_speech_model,
+                    defaults.default_speech_to_text_model,
+                    getattr(defaults, "default_vision_model", None),
+                )
+                if v
+            }
+        except Exception:
+            preferred_ids = set()
+
+        seen: dict[tuple, Model] = {}
+        for model in models:
+            key = (
+                (model.provider or "").lower(),
+                (model.name or "").lower(),
+                (model.type or "").lower(),
+            )
+            current = seen.get(key)
+            if current is None:
+                seen[key] = model
+                continue
+            # Replace if this row is preferred and the current one is not.
+            current_preferred = current.id in preferred_ids
+            new_preferred = model.id in preferred_ids
+            if new_preferred and not current_preferred:
+                seen[key] = model
+            elif new_preferred == current_preferred:
+                # Tie-break by earliest created timestamp.
+                if str(model.created) < str(current.created):
+                    seen[key] = model
+
+        deduped = list(seen.values())
+
         return [
             ModelResponse(
                 id=model.id,
@@ -185,7 +234,7 @@ async def get_models(
                 created=str(model.created),
                 updated=str(model.updated),
             )
-            for model in models
+            for model in deduped
         ]
     except Exception as e:
         logger.error(f"Error fetching models: {str(e)}")

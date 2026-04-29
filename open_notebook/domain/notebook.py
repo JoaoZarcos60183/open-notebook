@@ -48,7 +48,7 @@ class Notebook(ObjectModel):
         try:
             srcs = await repo_query(
                 """
-            select * omit note.content, note.embedding from (
+            select * omit note.embedding from (
                 select in as note from artifact where out=$id
                 fetch note
             ) order by note.updated desc

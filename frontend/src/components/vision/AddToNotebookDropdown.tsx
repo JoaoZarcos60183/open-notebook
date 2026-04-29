@@ -58,7 +58,10 @@ async function uploadDataUrlAsset(dataUrl: string): Promise<string> {
   }
 
   const data = (await response.json()) as { url: string };
-  return `${apiUrl}${data.url}`;
+  // Store the path-only URL (e.g. "/api/vision/note-asset/<file>") so the
+  // resulting markdown is portable across hosts: the renderer prepends the
+  // current API base URL at view time.
+  return data.url;
 }
 
 export function AddToNotebookDropdown({
@@ -136,7 +139,7 @@ export function AddToNotebookDropdown({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{dt.title}</DialogTitle>
             <DialogDescription>{dt.description}</DialogDescription>

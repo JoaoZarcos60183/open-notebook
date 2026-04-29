@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { NoteResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,6 +19,7 @@ import { NotebookResearchDialog } from './NotebookResearchDialog'
 import {
   MediaNoteViewerDialog,
   detectMediaNote,
+  useResolvedAssetUrl,
 } from '@/components/vision/MediaNoteViewerDialog'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import { formatDistanceToNow } from 'date-fns'
@@ -36,6 +37,65 @@ interface NotesColumnProps {
   notebookId: string
   contextSelections?: Record<string, ContextMode>
   onContextModeChange?: (noteId: string, mode: ContextMode) => void
+}
+
+/**
+ * Renders a thumbnail for a video by seeking to a random frame once
+ * metadata is available. Falls back to the first frame if seeking fails.
+ */
+function VideoThumbnail({ src, className }: { src: string; className?: string }) {
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const seekedRef = useRef(false)
+  const resolved = useResolvedAssetUrl(src)
+
+  const handleLoadedMetadata = () => {
+    const video = videoRef.current
+    if (!video || seekedRef.current) return
+    const duration = video.duration
+    if (!isFinite(duration) || duration <= 0) return
+    // Pick a frame between 10% and 90% of the duration
+    const min = duration * 0.1
+    const max = duration * 0.9
+    const target = min + Math.random() * (max - min)
+    try {
+      video.currentTime = target
+      seekedRef.current = true
+    } catch {
+      // Seeking can fail on some codecs/browsers; first frame remains.
+    }
+  }
+
+  return (
+    <video
+      ref={videoRef}
+      src={resolved}
+      muted
+      playsInline
+      preload="metadata"
+      crossOrigin="anonymous"
+      onLoadedMetadata={handleLoadedMetadata}
+      className={className}
+    />
+  )
+}
+
+/**
+ * Renders an image thumbnail using the live API base URL so the
+ * markdown-stored path keeps working when the frontend is served from a
+ * different host than the API.
+ */
+function ImageThumbnail({
+  src,
+  alt,
+  className,
+}: {
+  src: string
+  alt: string
+  className?: string
+}) {
+  const resolved = useResolvedAssetUrl(src)
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={resolved} alt={alt} className={className} />
 }
 
 export function NotesColumn({
@@ -169,19 +229,15 @@ export function NotesColumn({
                       {media ? (
                         <div className="relative flex-shrink-0 w-20 self-stretch min-h-[5rem] rounded-md overflow-hidden border bg-muted">
                           {media.kind === 'image' ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
+                            <ImageThumbnail
                               src={media.mediaUrl}
                               alt={note.title || ''}
                               className="absolute inset-0 w-full h-full object-cover"
                             />
                           ) : (
                             <>
-                              <video
+                              <VideoThumbnail
                                 src={media.mediaUrl}
-                                muted
-                                playsInline
-                                preload="metadata"
                                 className="absolute inset-0 w-full h-full object-cover"
                               />
                               <div className="absolute inset-0 flex items-center justify-center bg-black/20">
