@@ -206,7 +206,7 @@ export default function NotebookPage() {
                   </TabsTrigger>
                   <TabsTrigger value="notes" className="gap-2">
                     <StickyNote className="h-4 w-4" />
-                    {t.common.notes}
+                    {t.notebooks.agentNotes}
                   </TabsTrigger>
                   <TabsTrigger value="chat" className="gap-2">
                     <MessageSquare className="h-4 w-4" />

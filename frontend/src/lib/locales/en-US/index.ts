@@ -271,6 +271,7 @@ export const enUS = {
     createSuccess: "Notebook created successfully",
     updateSuccess: "Notebook updated successfully",
     deleteSuccess: "Notebook deleted successfully",
+    agentNotes: "Agent Notes",
   },
   sources: {
     title: "Sources",
@@ -1102,6 +1103,13 @@ export const enUS = {
     savingAsNote: "Research complete — saving as note...",
     checkNotesColumn: "Check the Notes column to see the result.",
     researchFailed: "Research failed",
+    modelLabelDesc: "Select the language model to use for generating the report.",
+    selectModelPlaceholder: "Select a model...",
+    tableOfContents: "Table of Contents",
+    researchConfiguration: "Research Configuration",
+    sourceDocuments: "Source Documents",
+    modelPrefix: "Model",
+    tonePrefix: "Tone",
   },
   setupBanner: {
     encryptionRequired: "Encryption key not configured",

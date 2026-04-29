@@ -44,6 +44,7 @@ import {
   useSaveResearchAsNote,
   useDeleteResearchJob,
 } from "@/lib/hooks/use-research";
+import { useModels } from "@/lib/hooks/use-models";
 import { useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/lib/api/query-client";
 import { useTranslation } from "@/lib/hooks/use-translation";
@@ -110,6 +111,7 @@ export function ResearchJobsList() {
   const { jobs, isLoading, hasActiveJobs } = useResearchJobs();
   const saveAsNote = useSaveResearchAsNote();
   const deleteJob = useDeleteResearchJob();
+  const { data: allModels } = useModels();
 
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -118,6 +120,41 @@ export function ResearchJobsList() {
 
   // Fetch the full job with result when selected
   const { data: selectedJob } = useResearchJob(selectedJobId);
+
+  // Resolve a model id to its human-friendly name when possible.
+  const resolveModelName = (modelId?: string | null) => {
+    if (!modelId) return undefined;
+    const found = allModels?.find((m) => m.id === modelId || m.name === modelId);
+    return found?.name ?? modelId;
+  };
+
+  // Extract a simple table of contents from the markdown report (h1-h3).
+  const buildToc = (markdown: string) => {
+    const lines = markdown.split("\n");
+    const items: { level: number; text: string; id: string }[] = [];
+    let inFence = false;
+    for (const raw of lines) {
+      const line = raw.trimEnd();
+      if (/^```/.test(line)) {
+        inFence = !inFence;
+        continue;
+      }
+      if (inFence) continue;
+      const m = /^(#{1,3})\s+(.+?)\s*#*\s*$/.exec(line);
+      if (!m) continue;
+      const level = m[1].length;
+      const text = m[2].replace(/[*_`~]/g, "").trim();
+      const id = text
+        .toLowerCase()
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-");
+      if (id) items.push({ level, text, id });
+    }
+    return items;
+  };
 
   // Fetch notebooks for the save dialog
   const { data: notebooks } = useQuery({
@@ -283,8 +320,8 @@ export function ResearchJobsList() {
         open={!!selectedJobId}
         onOpenChange={(open) => !open && setSelectedJobId(null)}
       >
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden p-0 flex flex-col">
+          <DialogHeader className="px-6 pt-6">
             <DialogTitle>{selectedJob?.query ?? "Research Report"}</DialogTitle>
             <DialogDescription>
               <ReportTypeLabel type={selectedJob?.report_type ?? ""} />
@@ -292,10 +329,106 @@ export function ResearchJobsList() {
           </DialogHeader>
 
           {selectedJob?.result ? (
-            <div className="space-y-4">
+            <div className="flex-1 min-h-0 overflow-hidden grid grid-cols-[200px_1fr] gap-0">
+              {/* Table of contents */}
+              {(() => {
+                const toc = buildToc(selectedJob.result.report);
+                return (
+                  <aside className="border-r bg-muted/30 overflow-y-auto px-3 py-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                      {t.research?.tableOfContents ?? "Table of Contents"}
+                    </p>
+                    {toc.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">—</p>
+                    ) : (
+                      <ul className="space-y-1 text-xs">
+                        {toc.map((item, i) => (
+                          <li
+                            key={`${item.id}-${i}`}
+                            style={{ paddingLeft: `${(item.level - 1) * 8}px` }}
+                          >
+                            <a
+                              href={`#${item.id}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                const el = document.getElementById(item.id);
+                                if (el)
+                                  el.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "start",
+                                  });
+                              }}
+                              className="text-muted-foreground hover:text-foreground hover:underline line-clamp-2"
+                            >
+                              {item.text}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </aside>
+                );
+              })()}
+
+              <div className="overflow-y-auto px-6 pb-6 space-y-4">
               {/* Report Content */}
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    h1: ({ children, ...rest }) => {
+                      const text = String(
+                        Array.isArray(children) ? children.join("") : children,
+                      );
+                      const id = text
+                        .toLowerCase()
+                        .normalize("NFKD")
+                        .replace(/[\u0300-\u036f]/g, "")
+                        .replace(/[^a-z0-9\s-]/g, "")
+                        .trim()
+                        .replace(/\s+/g, "-");
+                      return (
+                        <h1 id={id} {...rest}>
+                          {children}
+                        </h1>
+                      );
+                    },
+                    h2: ({ children, ...rest }) => {
+                      const text = String(
+                        Array.isArray(children) ? children.join("") : children,
+                      );
+                      const id = text
+                        .toLowerCase()
+                        .normalize("NFKD")
+                        .replace(/[\u0300-\u036f]/g, "")
+                        .replace(/[^a-z0-9\s-]/g, "")
+                        .trim()
+                        .replace(/\s+/g, "-");
+                      return (
+                        <h2 id={id} {...rest}>
+                          {children}
+                        </h2>
+                      );
+                    },
+                    h3: ({ children, ...rest }) => {
+                      const text = String(
+                        Array.isArray(children) ? children.join("") : children,
+                      );
+                      const id = text
+                        .toLowerCase()
+                        .normalize("NFKD")
+                        .replace(/[\u0300-\u036f]/g, "")
+                        .replace(/[^a-z0-9\s-]/g, "")
+                        .trim()
+                        .replace(/\s+/g, "-");
+                      return (
+                        <h3 id={id} {...rest}>
+                          {children}
+                        </h3>
+                      );
+                    },
+                  }}
+                >
                   {selectedJob.result.report}
                 </ReactMarkdown>
               </div>
@@ -305,7 +438,7 @@ export function ResearchJobsList() {
                 selectedJob.result.retrieved_documents.length > 0 && (
                   <div className="border-t pt-4">
                     <h4 className="font-medium mb-2">
-                      Source Documents (
+                      {t.research?.sourceDocuments ?? "Source Documents"} (
                       {selectedJob.result.retrieved_documents.length})
                     </h4>
                     <div className="space-y-2 max-h-[300px] overflow-y-auto">
@@ -334,19 +467,21 @@ export function ResearchJobsList() {
 
               {/* Settings used */}
               <div className="border-t pt-4">
-                <h4 className="font-medium mb-2">Research Configuration</h4>
+                <h4 className="font-medium mb-2">
+                  {t.research?.researchConfiguration ?? "Research Configuration"}
+                </h4>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline">
                     <ReportTypeLabel type={selectedJob.report_type} />
                   </Badge>
                   {selectedJob.result.tone && (
                     <Badge variant="outline">
-                      Tone: {selectedJob.result.tone}
+                      {(t.research?.tonePrefix ?? "Tone")}: {selectedJob.result.tone}
                     </Badge>
                   )}
                   {selectedJob.result.model_id && (
                     <Badge variant="outline">
-                      Model: {selectedJob.result.model_id}
+                      {(t.research?.modelPrefix ?? "Model")}: {resolveModelName(selectedJob.result.model_id)}
                     </Badge>
                   )}
                 </div>
@@ -374,6 +509,7 @@ export function ResearchJobsList() {
                   {t.research?.saveToNotebook ?? "Save to Notebook"}
                 </Button>
               </div>
+            </div>
             </div>
           ) : (
             <div className="flex items-center justify-center py-8">

@@ -46,12 +46,14 @@ export function useGlobalChat() {
     enabled: !!currentSessionId
   })
 
-  // Update messages when current session changes
+  // Update messages when current session changes.
+  // Skip while a message is being sent so that the optimistic user message
+  // isn't wiped out by a stale fetch of the freshly-created session.
   useEffect(() => {
-    if (currentSession?.messages) {
+    if (currentSession?.messages && !isSending) {
       setMessages(currentSession.messages)
     }
-  }, [currentSession])
+  }, [currentSession, isSending])
 
   // Auto-select most recent session — only on the very first load.
   useEffect(() => {

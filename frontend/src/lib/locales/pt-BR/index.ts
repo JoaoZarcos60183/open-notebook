@@ -202,8 +202,8 @@ export const ptBR = {
       "Não foi possível conectar ao servidor. Verifique se a API está rodando.",
   },
   navigation: {
-    collect: "Coletar",
-    process: "Processar",
+    collect: "Base de Dados",
+    process: "Interagir",
     create: "Criar",
     manage: "Gerenciar",
     sources: "Fontes",
@@ -221,7 +221,7 @@ export const ptBR = {
     language: "Alternar idioma",
     theme: "Tema",
     ask: "Perguntar",
-    research: "Pesquisa",
+    research: "Relatórios Profundos",
     vision: "Visão",
     imageAnalysis: "Análise de Imagem",
     videoAnalysis: "Análise de Vídeo",
@@ -271,6 +271,7 @@ export const ptBR = {
     createSuccess: "Notebook criado com sucesso",
     updateSuccess: "Notebook atualizado com sucesso",
     deleteSuccess: "Notebook eliminado com sucesso",
+    agentNotes: "Notas do Agente",
   },
   sources: {
     title: "Fontes",
@@ -492,6 +493,7 @@ export const ptBR = {
     sessionCreated: "Sessão de chat criada",
     sessionUpdated: "Sessão atualizada",
     sessionDeleted: "Sessão eliminada",
+    globalChatDescription: "Converse com todos os seus documentos indexados",
   },
   searchPage: {
     askAndSearch: "Perguntar e Pesquisar",
@@ -516,7 +518,7 @@ export const ptBR = {
     processing: "A processar...",
     saveToNotebooks: "Guardar em Notebooks",
     searchDesc:
-      "Busque em sua base de conhecimento por palavras-chave ou conceitos específicos",
+      "Pesquise na sua base de conhecimento por palavras-chave ou conceitos específicos",
     enterSearchPlaceholder: "Digite sua pesquisa...",
     pressToSearch: "Pressione Enter para pesquisar",
     searchType: "Tipo de Pesquisa",
@@ -539,7 +541,7 @@ export const ptBR = {
     searchAndAsk: "Pesquisar e Perguntar",
     searchResultsFor: 'Resultados da pesquisa para "{query}"',
     askAbout: 'Perguntar sobre "{query}"',
-    orSearchKb: "Ou busque em sua base de conhecimento",
+    orSearchKb: "Ou pesquise na sua base de conhecimento",
     saving: "A guardar...",
     advancedModelTitle: "Seleção Avançada de Modelo",
     advancedModelDesc:
@@ -1111,6 +1113,13 @@ export const ptBR = {
     savingAsNote: "Pesquisa concluída — a guardar como nota...",
     checkNotesColumn: "Consulte a coluna Notas para ver o resultado.",
     researchFailed: "Pesquisa falhou",
+    modelLabelDesc: "Selecione o modelo de linguagem a usar para gerar o relatório.",
+    selectModelPlaceholder: "Selecione um modelo...",
+    tableOfContents: "Índice",
+    researchConfiguration: "Configuração da Pesquisa",
+    sourceDocuments: "Documentos de Origem",
+    modelPrefix: "Modelo",
+    tonePrefix: "Tom",
   },
   setupBanner: {
     encryptionRequired: "Chave de criptografia não configurada",

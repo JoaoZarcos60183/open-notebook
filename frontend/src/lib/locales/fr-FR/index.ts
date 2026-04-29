@@ -276,6 +276,7 @@ export const frFR = {
     createSuccess: "Carnet créé avec succès",
     updateSuccess: "Carnet mis à jour avec succès",
     deleteSuccess: "Carnet supprimé avec succès",
+    agentNotes: "Notes de l'Agent",
   },
   sources: {
     title: "Sources",
@@ -486,6 +487,7 @@ export const frFR = {
     sessionCreated: "Session de chat créée",
     sessionUpdated: "Session mise à jour",
     sessionDeleted: "Session supprimée",
+    globalChatDescription: "Discutez avec tous vos documents indexés",
   },
   searchPage: {
     askAndSearch: "Poser une question et Rechercher",

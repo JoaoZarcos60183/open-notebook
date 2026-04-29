@@ -175,7 +175,8 @@ export function ResearchGeneratePanel({
               {t.research?.modelLabel ?? "AI Model"}
             </CardTitle>
             <CardDescription>
-              Select the language model to use for generating the report.
+              {t.research?.modelLabelDesc ??
+                "Select the language model to use for generating the report."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -183,7 +184,7 @@ export function ResearchGeneratePanel({
               modelType="language"
               value={modelId}
               onChange={setModelId}
-              placeholder="Select a model..."
+              placeholder={t.research?.selectModelPlaceholder ?? "Select a model..."}
               disabled={isSubmitting}
             />
           </CardContent>

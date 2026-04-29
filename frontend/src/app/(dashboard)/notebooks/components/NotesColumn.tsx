@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, StickyNote, Bot, User, MoreVertical, Trash2, Search } from 'lucide-react'
+import { Plus, StickyNote, Bot, User, MoreVertical, Trash2, Search, Image as ImageIcon, Video as VideoIcon, PlayCircle } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Badge } from '@/components/ui/badge'
@@ -58,8 +58,8 @@ export function NotesColumn({
   // Collapsible column state
   const { notesCollapsed, toggleNotes } = useNotebookColumnsStore()
   const collapseButton = useMemo(
-    () => createCollapseButton(toggleNotes, t.common.notes),
-    [toggleNotes, t.common.notes]
+    () => createCollapseButton(toggleNotes, t.notebooks.agentNotes),
+    [toggleNotes, t.notebooks.agentNotes]
   )
 
   const handleDeleteClick = (noteId: string) => {
@@ -85,12 +85,12 @@ export function NotesColumn({
         isCollapsed={notesCollapsed}
         onToggle={toggleNotes}
         collapsedIcon={StickyNote}
-        collapsedLabel={t.common.notes}
+        collapsedLabel={t.notebooks.agentNotes}
       >
         <Card className="h-full flex flex-col flex-1 overflow-hidden">
           <CardHeader className="pb-3 flex-shrink-0">
             <div className="flex items-center justify-between gap-2 min-w-0">
-              <CardTitle className="text-lg truncate">{t.common.notes}</CardTitle>
+              <CardTitle className="text-lg truncate">{t.notebooks.agentNotes}</CardTitle>
               <div className="flex items-center gap-1 flex-shrink-0">
                 <Button
                   size="sm"
@@ -131,6 +131,28 @@ export function NotesColumn({
               <div className="space-y-3">
                 {notes.map((note) => {
                   const media = detectMediaNote(note.content)
+                  const isAi = note.note_type === 'ai'
+                  const TypeIcon = media
+                    ? media.kind === 'image'
+                      ? ImageIcon
+                      : VideoIcon
+                    : isAi
+                      ? Bot
+                      : User
+                  const typeLabel = media
+                    ? media.kind === 'image'
+                      ? 'Imagem'
+                      : 'Vídeo'
+                    : isAi
+                      ? t.common.aiGenerated
+                      : t.common.human
+                  const typeBadgeClass = media
+                    ? media.kind === 'image'
+                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                      : 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30'
+                    : isAi
+                      ? 'bg-primary/10 text-primary border-primary/30'
+                      : 'bg-muted text-muted-foreground border-border'
                   return (
                   <div
                     key={note.id}
@@ -143,82 +165,107 @@ export function NotesColumn({
                       }
                     }}
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        {note.note_type === 'ai' ? (
-                          <Bot className="h-4 w-4 text-primary" />
-                        ) : (
-                          <User className="h-4 w-4 text-muted-foreground" />
-                        )}
-                        <Badge variant="secondary" className="text-xs">
-                          {note.note_type === 'ai' ? t.common.aiGenerated : t.common.human}
-                        </Badge>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(note.updated), { 
-                            addSuffix: true,
-                            locale: getDateLocale(language)
-                          })}
-                        </span>
-
-                        {/* Context toggle - only show if handler provided */}
-                        {onContextModeChange && contextSelections?.[note.id] && (
-                          <div onClick={(event) => event.stopPropagation()}>
-                            <ContextToggle
-                              mode={contextSelections[note.id]}
-                              hasInsights={false}
-                              onChange={(mode) => onContextModeChange(note.id, mode)}
+                    <div className="flex gap-3 items-stretch">
+                      {media && (
+                        <div className="relative flex-shrink-0 w-20 self-stretch min-h-[5rem] rounded-md overflow-hidden border bg-muted">
+                          {media.kind === 'image' ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={media.mediaUrl}
+                              alt={note.title || ''}
+                              className="absolute inset-0 w-full h-full object-cover"
                             />
+                          ) : (
+                            <>
+                              <video
+                                src={media.mediaUrl}
+                                muted
+                                playsInline
+                                preload="metadata"
+                                className="absolute inset-0 w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <PlayCircle className="h-7 w-7 text-white drop-shadow" />
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-2 gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <TypeIcon className={`h-4 w-4 flex-shrink-0 ${isAi && !media ? 'text-primary' : media?.kind === 'image' ? 'text-emerald-600 dark:text-emerald-400' : media?.kind === 'video' ? 'text-purple-600 dark:text-purple-400' : 'text-muted-foreground'}`} />
+                            <Badge variant="outline" className={`text-xs ${typeBadgeClass}`}>
+                              {typeLabel}
+                            </Badge>
                           </div>
+
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="text-xs text-muted-foreground hidden sm:inline">
+                              {formatDistanceToNow(new Date(note.updated), { 
+                                addSuffix: true,
+                                locale: getDateLocale(language)
+                              })}
+                            </span>
+
+                            {/* Context toggle - only show if handler provided */}
+                            {onContextModeChange && contextSelections?.[note.id] && (
+                              <div onClick={(event) => event.stopPropagation()}>
+                                <ContextToggle
+                                  mode={contextSelections[note.id]}
+                                  hasInsights={false}
+                                  onChange={(mode) => onContextModeChange(note.id, mode)}
+                                />
+                              </div>
+                            )}
+
+                            {/* Ellipsis menu for delete action */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleDeleteClick(note.id)
+                                  }}
+                                  className="text-red-600 focus:text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  {t.notebooks.deleteNote}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+
+                        {note.title && (
+                          <h4 className="text-sm font-medium mb-2 break-all">{note.title}</h4>
                         )}
 
-                        {/* Ellipsis menu for delete action */}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleDeleteClick(note.id)
-                              }}
-                              className="text-red-600 focus:text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              {t.notebooks.deleteNote}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        {media ? (
+                          media.analysisText && (
+                            <p className="text-sm text-muted-foreground line-clamp-3 break-all">
+                              {media.analysisText}
+                            </p>
+                          )
+                        ) : (
+                          note.content && (
+                            <p className="text-sm text-muted-foreground line-clamp-3 break-all">
+                              {note.content}
+                            </p>
+                          )
+                        )}
                       </div>
                     </div>
-
-                    {note.title && (
-                      <h4 className="text-sm font-medium mb-2 break-all">{note.title}</h4>
-                    )}
-
-                    {media ? (
-                      media.analysisText && (
-                        <p className="text-sm text-muted-foreground line-clamp-3 break-all">
-                          {media.analysisText}
-                        </p>
-                      )
-                    ) : (
-                      note.content && (
-                        <p className="text-sm text-muted-foreground line-clamp-3 break-all">
-                          {note.content}
-                        </p>
-                      )
-                    )}
                   </div>
                   )
                 })}
