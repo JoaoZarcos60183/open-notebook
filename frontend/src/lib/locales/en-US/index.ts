@@ -221,7 +221,6 @@ export const enUS = {
     theme: "Theme",
     ask: "Ask",
     research: "Research",
-    chat: "Chat",
     vision: "Vision",
     imageAnalysis: "Image Analysis",
     videoAnalysis: "Video Analysis",
@@ -1103,7 +1102,8 @@ export const enUS = {
     savingAsNote: "Research complete — saving as note...",
     checkNotesColumn: "Check the Notes column to see the result.",
     researchFailed: "Research failed",
-    modelLabelDesc: "Select the language model to use for generating the report.",
+    modelLabelDesc:
+      "Select the language model to use for generating the report.",
     selectModelPlaceholder: "Select a model...",
     tableOfContents: "Table of Contents",
     researchConfiguration: "Research Configuration",
@@ -1131,13 +1131,17 @@ export const enUS = {
     replaceHint: "Click or drag to replace",
     queryLabel: "Query",
     optional: "(optional)",
-    queryPlaceholderSam3: "e.g. red boat, person wearing a helmet, license plate...",
-    queryPlaceholderRfdetr: "Leave empty to detect everything, or type a COCO class (person, car, boat...) to filter",
+    queryPlaceholderSam3:
+      "e.g. red boat, person wearing a helmet, license plate...",
+    queryPlaceholderRfdetr:
+      "Leave empty to detect everything, or type a COCO class (person, car, boat...) to filter",
     engineLabel: "Detection Engine",
     engineSam3: "SAM3 (open-vocabulary, high-quality)",
     engineRfdetr: "RF-DETR (COCO classes, real-time)",
-    engineHintSam3: "Describe anything in natural language. Slower but more flexible.",
-    engineHintRfdetr: "Detects COCO-80 classes (person, car, boat, dog...). Leave query blank to detect everything; type a class name to filter.",
+    engineHintSam3:
+      "Describe anything in natural language. Slower but more flexible.",
+    engineHintRfdetr:
+      "Detects COCO-80 classes (person, car, boat, dog...). Leave query blank to detect everything; type a class name to filter.",
     analyze: "Analyze Image",
     analyzing: "Analyzing...",
     clear: "Clear",
@@ -1162,7 +1166,8 @@ export const enUS = {
     process: "Process Video",
     processing: "Processing...",
     processingTitle: "Processing video...",
-    processingDesc: "Tracking “{target}” — this may take a moment depending on video length. You can switch tabs; processing continues in the background.",
+    processingDesc:
+      "Tracking “{target}” — this may take a moment depending on video length. You can switch tabs; processing continues in the background.",
     clear: "Clear",
     result: "Result",
     trackedVideo: "Tracked Video",
@@ -1187,7 +1192,8 @@ export const enUS = {
   },
   addToNotebookDialog: {
     title: "Add to Notebook",
-    description: "Select one or more notebooks. The file will be saved as a source but will not be used as chat context.",
+    description:
+      "Select one or more notebooks. The file will be saved as a source but will not be used as chat context.",
     selectAtLeastOne: "Select at least one notebook.",
     noNotebooks: "No notebooks found.",
     cancel: "Cancel",

@@ -225,7 +225,6 @@ export const frFR = {
     theme: "Thème",
     ask: "Demander",
     research: "Recherche",
-    chat: "Chat",
     vision: "Vision",
     imageAnalysis: "Analyse d'image",
     videoAnalysis: "Analyse vidéo",
@@ -1085,13 +1084,17 @@ export const frFR = {
     replaceHint: "Cliquez ou glissez pour remplacer",
     queryLabel: "Requête",
     optional: "(facultatif)",
-    queryPlaceholderSam3: "ex. bateau rouge, personne portant un casque, plaque...",
-    queryPlaceholderRfdetr: "Laissez vide pour tout détecter, ou tapez une classe COCO (personne, voiture, bateau...) pour filtrer",
+    queryPlaceholderSam3:
+      "ex. bateau rouge, personne portant un casque, plaque...",
+    queryPlaceholderRfdetr:
+      "Laissez vide pour tout détecter, ou tapez une classe COCO (personne, voiture, bateau...) pour filtrer",
     engineLabel: "Moteur de détection",
     engineSam3: "SAM3 (vocabulaire ouvert, haute qualité)",
     engineRfdetr: "RF-DETR (classes COCO, temps réel)",
-    engineHintSam3: "Décrivez n'importe quoi en langage naturel. Plus lent mais plus flexible.",
-    engineHintRfdetr: "Détecte les 80 classes COCO. Laissez vide pour tout détecter ; tapez un nom de classe pour filtrer.",
+    engineHintSam3:
+      "Décrivez n'importe quoi en langage naturel. Plus lent mais plus flexible.",
+    engineHintRfdetr:
+      "Détecte les 80 classes COCO. Laissez vide pour tout détecter ; tapez un nom de classe pour filtrer.",
     analyze: "Analyser l'image",
     analyzing: "Analyse en cours...",
     clear: "Effacer",
@@ -1116,7 +1119,8 @@ export const frFR = {
     process: "Traiter la vidéo",
     processing: "Traitement...",
     processingTitle: "Traitement de la vidéo...",
-    processingDesc: "Suivi de « {target} » — cela peut prendre du temps selon la durée. Vous pouvez changer d'onglet ; le traitement continue en arrière-plan.",
+    processingDesc:
+      "Suivi de « {target} » — cela peut prendre du temps selon la durée. Vous pouvez changer d'onglet ; le traitement continue en arrière-plan.",
     clear: "Effacer",
     result: "Résultat",
     trackedVideo: "Vidéo traitée",
@@ -1141,7 +1145,8 @@ export const frFR = {
   },
   addToNotebookDialog: {
     title: "Ajouter au carnet",
-    description: "Sélectionnez un ou plusieurs carnets. Le fichier sera enregistré comme source mais ne sera pas utilisé comme contexte du chat.",
+    description:
+      "Sélectionnez un ou plusieurs carnets. Le fichier sera enregistré comme source mais ne sera pas utilisé comme contexte du chat.",
     selectAtLeastOne: "Sélectionnez au moins un carnet.",
     noNotebooks: "Aucun carnet trouvé.",
     cancel: "Annuler",

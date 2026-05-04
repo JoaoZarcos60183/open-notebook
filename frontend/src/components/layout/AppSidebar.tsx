@@ -139,7 +139,7 @@ const getNavigation = (t: TranslationKeys, isAdmin: boolean) => {
     });
   }
 
-  return baseNav as const;
+  return baseNav;
 };
 
 type CreateTarget =
@@ -154,7 +154,8 @@ export function AppSidebar() {
   const { isAdmin } = useRBAC();
   const { resolvedTheme } = useTheme();
   const navigation = getNavigation(t, isAdmin);
-  const logoSrc = resolvedTheme === "dark" ? "/logo_dark.png" : "/logo_light.png";
+  const logoSrc =
+    resolvedTheme === "dark" ? "/logo_dark.png" : "/logo_light.png";
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
