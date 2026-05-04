@@ -169,22 +169,73 @@ export function useGlobalChat() {
     setIsSending(true)
 
     try {
-      const response = await globalChatApi.sendMessage({
+      const body = await globalChatApi.sendMessageStream({
         session_id: sessionId,
         message,
         model_override: modelOverride ?? (currentSession?.model_override ?? undefined)
       })
 
-      setMessages(response.messages)
-      if (response.context_stats) {
-        setContextStats(response.context_stats)
+      if (!body) throw new Error('No response body')
+
+      const reader = body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let aiMessageId: string | null = null
+      let aiContent = ''
+
+      const ensureAiMessage = () => {
+        if (!aiMessageId) {
+          aiMessageId = `ai-${Date.now()}`
+          const initial: NotebookChatMessage = {
+            id: aiMessageId,
+            type: 'ai',
+            content: '',
+            timestamp: new Date().toISOString()
+          }
+          setMessages(prev => [...prev, initial])
+        }
       }
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const events = buffer.split('\n\n')
+        buffer = events.pop() ?? ''
+        for (const evt of events) {
+          const line = evt.split('\n').find(l => l.startsWith('data: '))
+          if (!line) continue
+          try {
+            const data = JSON.parse(line.slice(6))
+            if (data.type === 'delta') {
+              ensureAiMessage()
+              aiContent += data.content || ''
+              setMessages(prev =>
+                prev.map(m => m.id === aiMessageId ? { ...m, content: aiContent } : m)
+              )
+            } else if (data.type === 'complete') {
+              ensureAiMessage()
+              aiContent = data.content || aiContent
+              setMessages(prev =>
+                prev.map(m => m.id === aiMessageId ? { ...m, content: aiContent } : m)
+              )
+            } else if (data.type === 'context_stats') {
+              if (data.data) setContextStats(data.data)
+            } else if (data.type === 'error') {
+              throw new Error(data.message || 'Stream error')
+            }
+          } catch (e) {
+            if (!(e instanceof SyntaxError)) throw e
+          }
+        }
+      }
+
       await refetchCurrentSession()
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } }, message?: string }
       console.error('Error sending message:', error)
       toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
-      setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+      setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-') && !msg.id.startsWith('ai-')))
     } finally {
       setIsSending(false)
     }

@@ -15,10 +15,12 @@ Endpoints:
 """
 
 import asyncio
+import json
 import traceback
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -26,7 +28,7 @@ from pydantic import BaseModel, Field
 from open_notebook.database.repository import repo_query
 from open_notebook.domain.notebook import ChatSession
 from open_notebook.exceptions import NotFoundError
-from open_notebook.graphs.chat import graph as chat_graph
+from open_notebook.graphs.chat import astream_chat_response, graph as chat_graph
 from open_notebook.utils.graph_utils import get_session_message_count
 
 router = APIRouter()
@@ -518,3 +520,73 @@ async def execute_global_chat(request: ExecuteGlobalChatRequest):
             f"  Traceback:\n{traceback.format_exc()}"
         )
         raise HTTPException(status_code=500, detail=f"Error executing global chat: {e}")
+
+
+async def _stream_global_chat_sse(
+    session_id: str,
+    user_message: str,
+    context: Dict[str, Any],
+    context_stats: Dict[str, Any],
+    model_override: Optional[str],
+) -> AsyncGenerator[str, None]:
+    """Wrap ``astream_chat_response`` as Server-Sent Events for global chat."""
+    yield f"data: {json.dumps({'type': 'user_message', 'content': user_message})}\n\n"
+    yield f"data: {json.dumps({'type': 'context_stats', 'data': context_stats})}\n\n"
+    try:
+        async for event in astream_chat_response(
+            session_id=session_id,
+            user_message=user_message,
+            context=context,
+            model_override=model_override,
+            prompt_template="global_chat/system",
+        ):
+            yield f"data: {json.dumps(event)}\n\n"
+    except Exception as e:
+        logger.error(f"Error in global chat stream: {e}\n{traceback.format_exc()}")
+        yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+
+@router.post("/global-chat/execute/stream")
+async def execute_global_chat_stream(request: ExecuteGlobalChatRequest):
+    """Send a message in a global chat session with SSE token streaming."""
+    full_id = (
+        request.session_id
+        if request.session_id.startswith("chat_session:")
+        else f"chat_session:{request.session_id}"
+    )
+    session = await ChatSession.get(full_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Build context (RAG over indexed docs) up front
+    context = await _build_global_context(request.message)
+
+    model_override = (
+        request.model_override
+        if request.model_override is not None
+        else getattr(session, "model_override", None)
+    )
+
+    context_stats = {
+        "sources_count": len(context.get("sources", [])),
+        "notes_count": 0,
+        "navy_corpus_count": len(context.get("navy_corpus", [])),
+        "documents": context.get("documents", []),
+    }
+
+    await session.save()
+
+    return StreamingResponse(
+        _stream_global_chat_sse(
+            session_id=full_id,
+            user_message=request.message,
+            context=context,
+            context_stats=context_stats,
+            model_override=model_override,
+        ),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )

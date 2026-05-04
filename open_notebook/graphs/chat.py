@@ -1,9 +1,9 @@
 import asyncio
 import sqlite3
-from typing import Annotated, Optional
+from typing import Annotated, Any, AsyncGenerator, Optional
 
 from ai_prompter import Prompter
-from langchain_core.messages import AIMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
@@ -98,3 +98,83 @@ agent_state.add_node("agent", call_model_with_messages)
 agent_state.add_edge(START, "agent")
 agent_state.add_edge("agent", END)
 graph = agent_state.compile(checkpointer=memory)
+
+
+async def astream_chat_response(
+    session_id: str,
+    user_message: str,
+    context: Optional[Any] = None,
+    model_override: Optional[str] = None,
+    prompt_template: str = "chat/system",
+) -> AsyncGenerator[dict, None]:
+    """Stream an LLM response token-by-token for the given chat session.
+
+    Yields dict events:
+      - {"type": "delta", "content": <chunk>}
+      - {"type": "complete", "content": <full text>}
+      - {"type": "error", "message": <user-facing message>}
+
+    On success, persists the human + AI messages back to the LangGraph
+    checkpoint so subsequent ``GET /chat/sessions/{id}`` reflects the
+    exchange.
+    """
+    try:
+        config = RunnableConfig(configurable={"thread_id": session_id})
+
+        # Get current messages from checkpoint
+        current_state = await asyncio.to_thread(graph.get_state, config=config)
+        existing_messages = []
+        if current_state and current_state.values:
+            existing_messages = current_state.values.get("messages", [])
+
+        # Build state for prompt rendering (mirrors call_model_with_messages)
+        human_msg = HumanMessage(content=user_message)
+        prompt_state = {
+            "messages": existing_messages + [human_msg],
+            "context": context,
+            "model_override": model_override,
+            "prompt_template": prompt_template,
+        }
+
+        system_prompt = Prompter(prompt_template=prompt_template).render(
+            data=prompt_state  # type: ignore[arg-type]
+        )
+        payload = [SystemMessage(content=system_prompt)] + prompt_state["messages"]
+
+        # Provision model
+        model = await provision_langchain_model(
+            str(payload), model_override, "chat", max_tokens=8192
+        )
+
+        # Stream tokens
+        full_text_parts: list[str] = []
+        try:
+            async for chunk in model.astream(payload):
+                content = extract_text_content(getattr(chunk, "content", ""))
+                if content:
+                    full_text_parts.append(content)
+                    yield {"type": "delta", "content": content}
+        except NotImplementedError:
+            # Fallback: model doesn't support astream — call invoke
+            ai = await asyncio.to_thread(model.invoke, payload)
+            content = extract_text_content(getattr(ai, "content", ""))
+            full_text_parts.append(content)
+            yield {"type": "delta", "content": content}
+
+        full_text = "".join(full_text_parts)
+        cleaned = clean_thinking_content(full_text)
+
+        # Persist to checkpoint via add_messages reducer
+        ai_message = AIMessage(content=cleaned)
+        await asyncio.to_thread(
+            graph.update_state,
+            config,
+            {"messages": [human_msg, ai_message]},
+        )
+
+        yield {"type": "complete", "content": cleaned}
+    except OpenNotebookError as e:
+        yield {"type": "error", "message": str(e)}
+    except Exception as e:
+        _, user_facing = classify_error(e)
+        yield {"type": "error", "message": user_facing}

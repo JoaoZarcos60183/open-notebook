@@ -54,6 +54,34 @@ export const globalChatApi = {
     )
     return response.data
   },
+
+  sendMessageStream: (data: { session_id: string; message: string; model_override?: string }) => {
+    let token: string | null = null
+    if (typeof window !== 'undefined') {
+      const authStorage = localStorage.getItem('auth-storage')
+      if (authStorage) {
+        try {
+          const { state } = JSON.parse(authStorage)
+          if (state?.token) token = state.token
+        } catch (error) {
+          console.error('Error parsing auth storage:', error)
+        }
+      }
+    }
+    return fetch(`/api/global-chat/execute/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(data),
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return response.body
+    })
+  },
 }
 
 export default globalChatApi

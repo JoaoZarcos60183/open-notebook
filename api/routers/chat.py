@@ -1,8 +1,10 @@
 import asyncio
+import json
 import traceback
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -12,7 +14,7 @@ from open_notebook.domain.notebook import ChatSession, Note, Notebook, Source
 from open_notebook.exceptions import (
     NotFoundError,
 )
-from open_notebook.graphs.chat import graph as chat_graph
+from open_notebook.graphs.chat import astream_chat_response, graph as chat_graph
 from open_notebook.utils.graph_utils import get_session_message_count
 
 router = APIRouter()
@@ -407,6 +409,65 @@ async def execute_chat(request: ExecuteChatRequest):
             f"  Traceback:\n{traceback.format_exc()}"
         )
         raise HTTPException(status_code=500, detail=f"Error executing chat: {str(e)}")
+
+
+async def _stream_chat_sse(
+    session_id: str,
+    user_message: str,
+    context: Dict[str, Any],
+    model_override: Optional[str],
+) -> AsyncGenerator[str, None]:
+    """Wrap ``astream_chat_response`` as Server-Sent Events."""
+    # Echo user message first so the client can confirm receipt
+    yield f"data: {json.dumps({'type': 'user_message', 'content': user_message})}\n\n"
+    try:
+        async for event in astream_chat_response(
+            session_id=session_id,
+            user_message=user_message,
+            context=context,
+            model_override=model_override,
+            prompt_template="chat/system",
+        ):
+            yield f"data: {json.dumps(event)}\n\n"
+    except Exception as e:
+        logger.error(f"Error in chat stream: {e}\n{traceback.format_exc()}")
+        yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+
+@router.post("/chat/execute/stream")
+async def execute_chat_stream(request: ExecuteChatRequest):
+    """Execute a chat request with token-by-token SSE streaming."""
+    full_session_id = (
+        request.session_id
+        if request.session_id.startswith("chat_session:")
+        else f"chat_session:{request.session_id}"
+    )
+    session = await ChatSession.get(full_session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    model_override = (
+        request.model_override
+        if request.model_override is not None
+        else getattr(session, "model_override", None)
+    )
+
+    # Update session timestamp
+    await session.save()
+
+    return StreamingResponse(
+        _stream_chat_sse(
+            session_id=full_session_id,
+            user_message=request.message,
+            context=request.context,
+            model_override=model_override,
+        ),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.post("/chat/context", response_model=BuildContextResponse)

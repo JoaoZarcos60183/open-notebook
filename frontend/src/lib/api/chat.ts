@@ -59,6 +59,35 @@ export const chatApi = {
     return response.data
   },
 
+  // Streaming variant — returns the raw response body for SSE consumption
+  sendMessageStream: (data: SendNotebookChatMessageRequest) => {
+    let token: string | null = null
+    if (typeof window !== 'undefined') {
+      const authStorage = localStorage.getItem('auth-storage')
+      if (authStorage) {
+        try {
+          const { state } = JSON.parse(authStorage)
+          if (state?.token) token = state.token
+        } catch (error) {
+          console.error('Error parsing auth storage:', error)
+        }
+      }
+    }
+    return fetch(`/api/chat/execute/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(data),
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return response.body
+    })
+  },
+
   buildContext: async (data: BuildContextRequest) => {
     const response = await apiClient.post<BuildContextResponse>(
       `/chat/context`,
